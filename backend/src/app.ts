@@ -10,3 +10,6 @@ app.use(express.json({ limit: '10KB' }))
 
 
 app.use("/api/auth", authRouter)
+
+
+export default app

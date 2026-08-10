@@ -1,0 +1,18 @@
+import "dotenv/config";
+import { z } from "zod";
+
+
+const envSchema = z.object({
+    PORT: z.coerce.number().default(3000),
+
+    MONGO_URI: z.string(),
+
+    ACCESS_TOKEN_PRIVATE_KEY: z.string().min(1),
+
+    REFRESH_TOKEN_PRIVATE_KEY: z.string().min(1),
+})
+
+
+const env = envSchema.parse(process.env);
+
+export default env;
