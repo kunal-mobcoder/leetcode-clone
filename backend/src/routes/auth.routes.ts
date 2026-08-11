@@ -1,5 +1,9 @@
 import { Router } from "express";
 import { registerUserController, loginUserController } from "../controllers/auth.controller.js";
+import { registerSchema } from "../schemas/auth/register.schema.js";
+import { loginSchema } from "../schemas/auth/login.schema.js";
+import validateBody from "../middleware/validate.middleware.js";
+
 
 const authRouter = Router()
 
@@ -9,7 +13,7 @@ const authRouter = Router()
  * @description Register a new user
  * @access Public
  */
-authRouter.post("/register", registerUserController)
+authRouter.post("/register", validateBody(registerSchema), registerUserController)
 
 
 /**
@@ -17,6 +21,7 @@ authRouter.post("/register", registerUserController)
  * @description Login user with email and password
  * @access Public
  */
-authRouter.post("/login", loginUserController)
+authRouter.post("/login", validateBody(loginSchema), loginUserController)
+
 
 export default authRouter

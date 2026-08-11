@@ -57,4 +57,5 @@ const SubmissionSchema = new mongoose.Schema({
 
 const SubmissionModel = mongoose.model<SubmissionSchema>("Submission", SubmissionSchema)
 
+
 export default SubmissionSchema
