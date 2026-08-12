@@ -1,151 +1,164 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import UserModel from "../models/user.model.js";
 import { Request, Response } from "express";
 
+import { registerUser, loginUser, refreshAccessToken, logoutUser, } from "../services/auth.service.js";
 
-/**
- *  @name registerUserController
- *  @description register a new user, expects username, email, password in the request body
- *  @access Public
- */
-async function registerUserController(req: Request, res: Response) {
+import { refreshTokenCookieOptions } from "../config/cookie.js";
+
+import type { RegisterInput } from "../schemas/auth/register.schema.js";
+import type { LoginInput } from "../schemas/auth/login.schema.js";
+
+async function registerUserController(req: Request<{}, {}, RegisterInput>, res: Response) {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, } = req.body;
 
-        if (!username || !email || !password) {
-            return res.status(400).json({
-                message: "Please provide username, email and password"
-            });
-        }
-
-        const existingUser = await UserModel.findOne({
-            $or: [{ username }, { email }]
+        const result = await registerUser(username, email, password, {
+            ip: req.ip || "unknown",
+            userAgent: req.get("user-agent") || "unknown",
         });
 
-        if (existingUser) {
-            return res.status(409).json({
-                message: "Username or email already exists"
-            });
-        }
-
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = await UserModel.create({
-            username,
-            email,
-            password: hashedPassword
-        });
-
-        const jwtSecret = process.env.JWT_SECRET;
-
-        if (!jwtSecret) {
-            throw new Error("JWT_SECRET is missing");
-        }
-
-        const token = jwt.sign(
-            {
-                id: user._id,
-                username: user.username
-            },
-            jwtSecret,
-            { expiresIn: "1d" }
+        res.cookie(
+            "refreshToken",
+            result.refreshToken,
+            refreshTokenCookieOptions
         );
 
         return res.status(201).json({
             message: "User registered successfully",
-            token,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email
-            }
+            accessToken: result.accessToken,
+            user: result.user,
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Register controller error:", error);
+
+        if (error instanceof Error && error.message === "Username or email already exists") {
+            return res.status(409).json({
+                message: error.message,
+            });
+        }
 
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
         });
     }
 }
 
-
-/**
- *  @name loginUserController
- *  @description login a user, expects email and password in the request body
- *  @access Public
- */
-async function loginUserController(req: Request, res: Response) {
+async function loginUserController(req: Request<{}, {}, LoginInput>, res: Response) {
     try {
-        const { email, password } = req.body;
+        const { email, password, } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Please provide email and password"
-            });
-        }
+        const result = await loginUser(email, password, {
+            ip: req.ip || "unknown",
+            userAgent: req.get("user-agent") || "unknown",
+        });
 
-        const user = await UserModel.findOne({ email });
-
-        if (!user) {
-            return res.status(401).json({
-                message: "Invalid email or password"
-            });
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-            password,
-            user.password
-        );
-
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                message: "Invalid email or password"
-            });
-        }
-
-        const jwtSecret = process.env.JWT_SECRET;
-
-        if (!jwtSecret) {
-            throw new Error("JWT_SECRET is missing");
-        }
-
-        const token = jwt.sign(
-            {
-                id: user._id,
-                username: user.username
-            },
-            jwtSecret,
-            { expiresIn: "1d" }
+        res.cookie(
+            "refreshToken",
+            result.refreshToken,
+            refreshTokenCookieOptions
         );
 
         return res.status(200).json({
             message: "User logged in successfully",
-            token,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email
-            }
+            accessToken: result.accessToken,
+            user: result.user,
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Login controller error:", error);
+
+        if (error instanceof Error && error.message === "Invalid email or password") {
+            return res.status(401).json({
+                message: error.message,
+            });
+        }
 
         return res.status(500).json({
-            message: "Internal Server Error"
+            message: "Internal Server Error",
+        });
+    }
+}
+
+async function refreshTokenController(req: Request, res: Response) {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                message: "Refresh token not found",
+            });
+        }
+
+        const result = await refreshAccessToken(refreshToken, {
+            ip: req.ip || "unknown",
+            userAgent: req.get("user-agent") || "unknown",
+        });
+
+        res.cookie(
+            "refreshToken",
+            result.refreshToken,
+            refreshTokenCookieOptions
+        );
+
+        return res.status(200).json({
+            message: "Access token refreshed successfully",
+            accessToken: result.accessToken,
+        });
+
+    } catch (error) {
+        console.error("Refresh token controller error:", error);
+
+        res.clearCookie("refreshToken", refreshTokenCookieOptions);
+
+        if (error instanceof Error && (
+            error.message === "Invalid refresh token" || error.message === "Refresh token expired"
+        )) {
+            return res.status(401).json({
+                message: error.message,
+            });
+        }
+
+        return res.status(500).json({
+            message: "Internal Server Error",
         });
     }
 }
 
 
 async function logoutUserController(req: Request, res: Response) {
+    try {
+        const refreshToken = req.cookies.refreshToken;
 
+        if (!refreshToken) {
+            return res.status(200).json({
+                message: "Logged out successfully",
+            });
+        }
+
+        await logoutUser(refreshToken);
+
+        res.clearCookie(
+            "refreshToken",
+            refreshTokenCookieOptions
+        );
+
+        return res.status(200).json({
+            message: "Logged out successfully",
+        });
+
+    } catch (error) {
+        console.error("Logout controller error:", error);
+
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
 }
+
+
 export {
     registerUserController,
-    loginUserController
+    loginUserController,
+    logoutUserController,
+    refreshTokenController
 };

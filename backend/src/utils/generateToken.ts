@@ -2,13 +2,12 @@ import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 
 import env from "../config/env.js";
-import { UserRole } from "../models/user.model.js";
+import type { UserRole } from "../models/user.model.js";
 
-interface AccessTokenPayload {
+export interface AccessTokenPayload {
     userId: string;
     roles: UserRole[];
 }
-
 
 export function generateAccessToken(
     payload: AccessTokenPayload
@@ -22,13 +21,15 @@ export function generateAccessToken(
     );
 }
 
-
 export function generateRefreshToken(): string {
-    return crypto.randomBytes(64).toString("hex");
+    return crypto
+        .randomBytes(64)
+        .toString("hex");
 }
 
-
-export function hashRefreshToken(refreshToken: string): string {
+export function hashRefreshToken(
+    refreshToken: string
+): string {
     return crypto
         .createHash("sha256")
         .update(refreshToken)

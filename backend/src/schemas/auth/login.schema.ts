@@ -5,10 +5,11 @@ export const loginSchema = z.object({
         .string()
         .trim()
         .toLowerCase()
-        .email("Please provide a valid email address"),
+        .email("Invalid email address"),
 
     password: z
         .string()
         .min(1, "Password is required"),
 });
 
+export type LoginInput = z.infer<typeof loginSchema>;

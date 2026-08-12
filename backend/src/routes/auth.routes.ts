@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUserController, loginUserController } from "../controllers/auth.controller.js";
+import { registerUserController, loginUserController, logoutUserController, refreshTokenController } from "../controllers/auth.controller.js";
 import { registerSchema } from "../schemas/auth/register.schema.js";
 import { loginSchema } from "../schemas/auth/login.schema.js";
 import validateBody from "../middleware/validate.middleware.js";
@@ -22,6 +22,22 @@ authRouter.post("/register", validateBody(registerSchema), registerUserControlle
  * @access Public
  */
 authRouter.post("/login", validateBody(loginSchema), loginUserController)
+
+
+/**
+ * @route POST /api/auth/refresh
+ * @description Refresh the token
+ * @access Public
+ */
+authRouter.post("/refresh", refreshTokenController);
+
+
+/**
+ * @route POST /api/auth/register
+ * @description Logout a user
+ * @access Public
+ */
+authRouter.post("/logout", logoutUserController);
 
 
 export default authRouter
