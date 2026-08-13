@@ -9,10 +9,7 @@ class UserRepository {
         return UserModel.findOne({ username });
     }
 
-    async findByEmailOrUsername(
-        email: string,
-        username: string
-    ) {
+    async findByEmailOrUsername(email: string, username: string) {
         return UserModel.findOne({
             $or: [
                 { email },
@@ -25,11 +22,7 @@ class UserRepository {
         return UserModel.findById(userId);
     }
 
-    async create(data: {
-        username: string;
-        email: string;
-        password: string;
-    }) {
+    async create(data: { username: string; email: string; password: string; }) {
         return UserModel.create(data);
     }
 }

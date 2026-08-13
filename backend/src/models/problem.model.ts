@@ -1,56 +1,108 @@
 import mongoose from "mongoose";
 
 
+export type ProblemDifficulty =
+    | "easy"
+    | "medium"
+    | "hard";
+
+export interface ProblemExample {
+    input: string;
+    output: string;
+    explanation?: string;
+}
+
 export interface Problem {
     title: string;
+    slug: string;
     description: string;
-    examples: string;
-    tags: string;
-    testcases: [];
-    difficulty: string;
+    difficulty: ProblemDifficulty;
+    constraints: string[];
+    examples: ProblemExample[];
+    tags: string[];
+    isPublished: boolean;
 }
 
 
-const ProblemSchema = new mongoose.Schema({
+const ProblemExampleSchema = new mongoose.Schema<ProblemExample>({
+    input: {
+        type: String,
+        required: true,
+    },
+
+    output: {
+        type: String,
+        required: true,
+    },
+
+    explanation: {
+        type: String,
+    },
+},
+    {
+        _id: false,
+    }
+);
+
+
+const ProblemSchema = new mongoose.Schema<Problem>({
     title: {
         type: String,
-        required: [true, 'Problem title is required']
+        required: true,
+        trim: true,
     },
+
+    slug: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+    },
+
     description: {
         type: String,
-        required: [true, 'Problem description is required'],
+        required: true,
     },
-    examples: {
-        type: String,
-    },
-    tags: {
-        type: String,
-    },
-    testcases: [
-        {
-            input: {
-                type: String,
-                required: [true, 'Test case input is required']
-            },
-            output: {
-                type: String,
-                required: [true, 'Test case expected output is required']
-            },
-            isPrivate: {
-                type: Boolean,
-                default: true   // true = hidden test case, false = sample/visible test case
-            }
-        }
-    ],
+
     difficulty: {
         type: String,
-        enum: ['Easy', 'Medium', 'Hard'],
-        required: [true, 'Difficulty level is required']
-    }
-}, { timestamps: true });
+        enum: [
+            "easy",
+            "medium",
+            "hard",
+        ],
+        required: true,
+        index: true,
+    },
 
+    constraints: {
+        type: [String],
+        default: [],
+    },
+
+    examples: {
+        type: [ProblemExampleSchema],
+        default: [],
+    },
+
+    tags: {
+        type: [String],
+        default: [],
+        index: true,
+    },
+
+    isPublished: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+},
+    {
+        timestamps: true,
+    }
+);
 
 
 const ProblemModel = mongoose.model<Problem>("Problem", ProblemSchema)
 
-export default ProblemSchema
+export default ProblemModel

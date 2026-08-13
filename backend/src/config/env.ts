@@ -5,7 +5,7 @@ import { z } from "zod";
 const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
 
-    MONGO_URI: z.string(),
+    MONGODB_URI: z.string(),
 
     ACCESS_TOKEN_PRIVATE_KEY: z.string().min(1),
 

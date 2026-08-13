@@ -5,7 +5,7 @@ import { loginSchema } from "../schemas/auth/login.schema.js";
 import validateBody from "../middleware/validate.middleware.js";
 
 
-const authRouter = Router()
+const router = Router()
 
 
 /**
@@ -13,7 +13,7 @@ const authRouter = Router()
  * @description Register a new user
  * @access Public
  */
-authRouter.post("/register", validateBody(registerSchema), registerUserController)
+router.post("/register", validateBody(registerSchema), registerUserController)
 
 
 /**
@@ -21,7 +21,7 @@ authRouter.post("/register", validateBody(registerSchema), registerUserControlle
  * @description Login user with email and password
  * @access Public
  */
-authRouter.post("/login", validateBody(loginSchema), loginUserController)
+router.post("/login", validateBody(loginSchema), loginUserController)
 
 
 /**
@@ -29,7 +29,7 @@ authRouter.post("/login", validateBody(loginSchema), loginUserController)
  * @description Refresh the token
  * @access Public
  */
-authRouter.post("/refresh", refreshTokenController);
+router.post("/refresh", refreshTokenController);
 
 
 /**
@@ -37,7 +37,7 @@ authRouter.post("/refresh", refreshTokenController);
  * @description Logout a user
  * @access Public
  */
-authRouter.post("/logout", logoutUserController);
+router.get("/logout", logoutUserController);
 
 
-export default authRouter
+export default router

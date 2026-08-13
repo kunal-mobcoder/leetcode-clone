@@ -9,23 +9,18 @@ interface CreateSessionData {
 }
 
 class SessionRepository {
-
     async create(data: CreateSessionData) {
         return SessionModel.create(data);
     }
 
-    async findValidSession(
-        refreshTokenHash: string
-    ) {
+    async findValidSession(refreshTokenHash: string) {
         return SessionModel.findOne({
             refreshTokenHash,
             revoked: false,
         });
     }
 
-    async revokeSession(
-        refreshTokenHash: string
-    ) {
+    async revokeSession(refreshTokenHash: string) {
         return SessionModel.findOneAndUpdate(
             {
                 refreshTokenHash,
@@ -43,9 +38,7 @@ class SessionRepository {
         );
     }
 
-    async revokeSessionById(
-        sessionId: string
-    ) {
+    async revokeSessionById(sessionId: string) {
         return SessionModel.findByIdAndUpdate(
             sessionId,
             {

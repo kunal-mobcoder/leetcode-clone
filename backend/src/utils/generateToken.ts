@@ -2,12 +2,7 @@ import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 
 import env from "../config/env.js";
-import type { UserRole } from "../models/user.model.js";
-
-export interface AccessTokenPayload {
-    userId: string;
-    roles: UserRole[];
-}
+import { AccessTokenPayload } from "../types/auth.js";
 
 export function generateAccessToken(
     payload: AccessTokenPayload

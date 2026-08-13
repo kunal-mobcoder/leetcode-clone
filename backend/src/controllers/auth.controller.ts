@@ -124,7 +124,6 @@ async function refreshTokenController(req: Request, res: Response) {
     }
 }
 
-
 async function logoutUserController(req: Request, res: Response) {
     try {
         const refreshToken = req.cookies.refreshToken;
@@ -155,10 +154,15 @@ async function logoutUserController(req: Request, res: Response) {
     }
 }
 
+async function logoutFromAllUserController(req: Request, res: Response) {
+
+}
+
 
 export {
     registerUserController,
     loginUserController,
+    refreshTokenController,
     logoutUserController,
-    refreshTokenController
+    logoutFromAllUserController
 };
