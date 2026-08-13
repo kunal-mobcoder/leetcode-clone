@@ -8,7 +8,6 @@ import problemRoutes from "./routes/problem.routes.js"
 
 const app = express()
 
-
 app.use(cors())
 app.use(cookieParser());
 app.use(express.json({ limit: '10KB' }))
