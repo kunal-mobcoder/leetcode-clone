@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 
 export type ProblemDifficulty =
@@ -6,11 +6,19 @@ export type ProblemDifficulty =
     | "medium"
     | "hard";
 
+
+export type ProblemStatus =
+    | "draft"
+    | "published"
+    | "archived";
+
+
 export interface ProblemExample {
     input: string;
     output: string;
     explanation?: string;
 }
+
 
 export interface Problem {
     title: string;
@@ -20,19 +28,20 @@ export interface Problem {
     constraints: string[];
     examples: ProblemExample[];
     tags: string[];
-    isPublished: boolean;
+    status: ProblemStatus;
+    createdBy: mongoose.Types.ObjectId;
 }
 
 
-const ProblemExampleSchema = new mongoose.Schema<ProblemExample>({
+const ProblemExampleSchema = new Schema<ProblemExample>({
     input: {
         type: String,
-        required: true,
+        required: [true, "Example input is required",],
     },
 
     output: {
         type: String,
-        required: true,
+        required: [true, "Example output is required",],
     },
 
     explanation: {
@@ -45,33 +54,31 @@ const ProblemExampleSchema = new mongoose.Schema<ProblemExample>({
 );
 
 
-const ProblemSchema = new mongoose.Schema<Problem>({
+const ProblemSchema = new Schema<Problem>({
     title: {
         type: String,
-        required: true,
+        required: [true, "Problem title is required",],
         trim: true,
     },
 
     slug: {
         type: String,
-        required: true,
+        required: [true, "Problem slug is required",],
         unique: true,
         index: true,
+        trim: true,
+        lowercase: true,
     },
 
     description: {
         type: String,
-        required: true,
+        required: [true, "Problem description is required",],
     },
 
     difficulty: {
         type: String,
-        enum: [
-            "easy",
-            "medium",
-            "hard",
-        ],
-        required: true,
+        enum: ["easy", "medium", "hard",],
+        required: [true, "Problem difficulty is required",],
         index: true,
     },
 
@@ -81,7 +88,7 @@ const ProblemSchema = new mongoose.Schema<Problem>({
     },
 
     examples: {
-        type: [ProblemExampleSchema],
+        type: [ProblemExampleSchema,],
         default: [],
     },
 
@@ -91,9 +98,16 @@ const ProblemSchema = new mongoose.Schema<Problem>({
         index: true,
     },
 
-    isPublished: {
-        type: Boolean,
-        default: false,
+    status: {
+        type: String,
+        enum: ["draft", "published", "archived",],
+        default: "draft",
+        index: true,
+    },
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
         index: true,
     },
 },
@@ -103,6 +117,7 @@ const ProblemSchema = new mongoose.Schema<Problem>({
 );
 
 
-const ProblemModel = mongoose.model<Problem>("Problem", ProblemSchema)
+const ProblemModel = mongoose.model<Problem>("Problem", ProblemSchema);
 
-export default ProblemModel
+
+export default ProblemModel;
