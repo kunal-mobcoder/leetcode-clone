@@ -16,6 +16,7 @@ export function errorMiddleware(error: unknown, req: Request, res: Response, nex
     // Mongoose validation errors
     if (error instanceof mongoose.Error.ValidationError) {
 
+        // Object.values converts into array so that we can looop
         const errors = Object.values(error.errors).map(validationError => ({
             field: validationError.path,
             message: validationError.message,
