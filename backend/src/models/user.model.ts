@@ -1,29 +1,50 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-import ProblemModel from "../models/problem.model.js";
+export type UserRole = "user" | "admin";
 
-import type { CreateProblemInput }
-    from "../schemas/problem/createProblem.schema.js";
-
-
-interface CreateProblemData
-    extends CreateProblemInput {
-
-    createdBy: mongoose.Types.ObjectId;
+export interface User {
+    username: string;
+    email: string;
+    password: string;
+    roles: UserRole[];
 }
 
 
-export async function findProblemBySlug(
-    slug: string
-) {
-    return ProblemModel.findOne({
-        slug,
-    });
-}
+const UserSchema = new Schema<User>(
+    {
+        username: {
+            type: String,
+            required: [true, "Username is required"],
+            unique: true,
+            trim: true,
+        },
+
+        email: {
+            type: String,
+            required: [true, "Email is required"],
+            unique: true,
+            lowercase: true,
+            trim: true,
+        },
+
+        password: {
+            type: String,
+            required: [true, "Password is required"],
+        },
+
+        roles: {
+            type: [String],
+            enum: ["user", "admin"],
+            default: ["user"],
+        },
+    },
+    {
+        timestamps: true,
+    }
+);
 
 
-export async function createProblem(
-    data: CreateProblemData
-) {
-    return ProblemModel.create(data);
-}
+const UserModel = mongoose.model<User>("User", UserSchema);
+
+
+export default UserModel;

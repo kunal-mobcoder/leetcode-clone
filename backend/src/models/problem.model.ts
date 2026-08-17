@@ -1,16 +1,10 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
 
 export type ProblemDifficulty =
     | "easy"
     | "medium"
     | "hard";
-
-
-export type ProblemStatus =
-    | "draft"
-    | "published"
-    | "archived";
 
 
 export interface ProblemExample {
@@ -28,12 +22,12 @@ export interface Problem {
     constraints: string[];
     examples: ProblemExample[];
     tags: string[];
-    status: ProblemStatus;
+    status: "draft" | "published" | "archived";
     createdBy: mongoose.Types.ObjectId;
 }
 
 
-const ProblemExampleSchema = new Schema<ProblemExample>({
+const ProblemExampleSchema = new mongoose.Schema<ProblemExample>({
     input: {
         type: String,
         required: [true, "Example input is required",],
@@ -54,67 +48,77 @@ const ProblemExampleSchema = new Schema<ProblemExample>({
 );
 
 
-const ProblemSchema = new Schema<Problem>({
-    title: {
-        type: String,
-        required: [true, "Problem title is required",],
-        trim: true,
-    },
+const ProblemSchema = new mongoose.Schema<Problem>(
+    {
+        title: {
+            type: String,
+            required: true,
+            trim: true,
+        },
 
-    slug: {
-        type: String,
-        required: [true, "Problem slug is required",],
-        unique: true,
-        index: true,
-        trim: true,
-        lowercase: true,
-    },
+        slug: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true,
+            trim: true,
+        },
 
-    description: {
-        type: String,
-        required: [true, "Problem description is required",],
-    },
+        description: {
+            type: String,
+            required: true,
+        },
 
-    difficulty: {
-        type: String,
-        enum: ["easy", "medium", "hard",],
-        required: [true, "Problem difficulty is required",],
-        index: true,
-    },
+        difficulty: {
+            type: String,
+            enum: [
+                "easy",
+                "medium",
+                "hard",
+            ],
+            required: true,
+            index: true,
+        },
 
-    constraints: {
-        type: [String],
-        default: [],
-    },
+        constraints: {
+            type: [String],
+            default: [],
+        },
 
-    examples: {
-        type: [ProblemExampleSchema,],
-        default: [],
-    },
+        examples: {
+            type: [ProblemExampleSchema],
+            default: [],
+        },
 
-    tags: {
-        type: [String],
-        default: [],
-        index: true,
-    },
+        tags: {
+            type: [String],
+            default: [],
+            index: true,
+        },
 
-    status: {
-        type: String,
-        enum: ["draft", "published", "archived",],
-        default: "draft",
-        index: true,
+        status: {
+            type: String,
+            enum: ["draft", "published", "archived"],
+            default: "draft",
+        },
+
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+            index: true,
+        },
     },
-    createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        index: true,
-    },
-},
     {
         timestamps: true,
     }
 );
+
+ProblemSchema.index({
+    title: "text",
+    description: "text",
+    tags: "text",
+});
 
 
 const ProblemModel = mongoose.model<Problem>("Problem", ProblemSchema);

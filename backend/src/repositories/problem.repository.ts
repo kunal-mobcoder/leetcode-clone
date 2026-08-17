@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-
 import ProblemModel from "../models/problem.model.js";
-
-import type { CreateProblemInput } from "../schemas/problem/createProblem.schema.js";
+import type { CreateProblemInput, } from "../schemas/problem/createProblem.schema.js";
+import type { UpdateProblemInput, } from "../schemas/problem/updateProblem.schema.js";
+import type { ProblemDifficulty, } from "../models/problem.model.js";
 
 
 interface CreateProblemData
@@ -11,33 +11,127 @@ interface CreateProblemData
 }
 
 
-export async function findProblemBySlug(
-    slug: string
-) {
-    return ProblemModel.findOne({
-        slug,
-    });
+interface FindProblemsOptions {
+    page: number;
+    limit: number;
+
+    difficulty?: ProblemDifficulty;
+    tag?: string;
+    search?: string;
+
+    sort: "title" | "difficulty" | "createdAt";
+    order: "asc" | "desc";
+
+    status?: "draft" | "published" | "archived";
 }
 
 
-export async function createProblem(
-    data: CreateProblemData
-) {
+export async function findProblemBySlug(slug: string, status?: "draft" | "published" | "archived") {
+
+    const filter: Record<string, unknown> = { slug };
+
+    if (status !== undefined) {
+        filter.status = status;
+    }
+
+    return ProblemModel.findOne(filter).lean();
+}
+
+
+export async function findProblemById(id: string) {
+
+    if (!mongoose.isValidObjectId(id)) {
+        return null;
+    }
+
+    return ProblemModel.findById(id).lean();
+}
+
+
+export async function createProblem(data: CreateProblemData) {
+
     return ProblemModel.create(data);
 }
 
 
-// data must have everything required by CreateProblemInput AND it must have a createdBy property that is a string.
+export async function findProblems(options: FindProblemsOptions) {
 
-// Why not just modify CreateProblemInput?
-// Why not put createdBy directly inside CreateProblemInput?
+    const { page, limit, difficulty, tag, search, sort, order, status } = options;
 
-// For example:
-// type CreateProblemInput = {
-//     title: string;
-//     description: string;
-//     difficulty: string;
-//     createdBy: string;
-// };
+    const filter: Record<string, unknown> = {};
 
-// Sometimes that's appropriate, but often CreateProblemInput represents data coming from the client/request, while createdBy is something the server determines.
+    if (difficulty) {
+        filter.difficulty = difficulty;
+    }
+
+    if (tag) {
+        filter.tags = tag;
+    }
+
+    if (search) {
+        filter.$text = {
+            $search: search,
+        };
+    }
+
+    if (status) {
+        filter.status = status;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const sortOrder = order === "asc" ? 1 : -1;
+
+    const [problems, total] = await Promise.all([
+        ProblemModel
+            .find(filter)
+            .sort({
+                [sort]: sortOrder,
+            })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+
+        ProblemModel.countDocuments(
+            filter
+        ),
+    ]);
+
+
+    return {
+        problems,
+        total,
+    };
+}
+
+
+export async function updateProblem(id: string, data: UpdateProblemInput) {
+
+    return ProblemModel.findByIdAndUpdate(
+        id,
+        {
+            $set: data,
+        },
+        {
+            new: true,
+            runValidators: true,
+        }
+    ).lean();
+}
+
+
+export async function updateProblemStatus(id: string, status: "draft" | "published" | "archived") {
+
+    return ProblemModel.findByIdAndUpdate(
+        id,
+        {
+            $set: {
+                status,
+            },
+        },
+        {
+            new: true,
+            runValidators: true,
+        }
+    ).lean();
+}
