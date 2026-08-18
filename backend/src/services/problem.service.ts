@@ -36,14 +36,12 @@ export async function getProblemsService(query: ProblemQueryInput) {
         search: query.search,
         sort: query.sort,
         order: query.order,
-
-        // Public endpoint only exposes
-        // published problems.
         status: "published",
     });
 
     const totalPages = Math.ceil(result.total / query.limit);
 
+    // Pagination response
     return {
         problems: result.problems,
         pagination: {
