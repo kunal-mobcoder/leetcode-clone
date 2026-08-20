@@ -50,7 +50,6 @@ const SessionSchema = new Schema<SessionDocument>(
         expiresAt: {
             type: Date,
             required: [true, "Expiration date is required"],
-            index: true,
         },
 
         revokedAt: {
