@@ -20,5 +20,4 @@ export const createSubmissionSchema = z.object({
 });
 
 
-export type CreateSubmissionInput =
-    z.infer<typeof createSubmissionSchema>;
+export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
