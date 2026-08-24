@@ -1,44 +1,63 @@
 import mongoose from "mongoose";
+
 import TestCaseModel from "../models/testCase.model.js";
-import type { TestCase } from "../models/testCase.model.js";
+
+import type {
+    TestCase,
+} from "../models/testCase.model.js";
 
 
 /**
  * Create a new test case.
  */
-export async function createTestCase(data: Omit<TestCase, "_id">) {
-    const testCase = await TestCaseModel.create(data);
+export async function createTestCase(
+    data: Omit<TestCase, "_id">
+) {
 
-    return testCase;
+    return TestCaseModel.create(data);
 }
 
 
 /**
  * Find a test case by its ID.
+ *
+ * Returns null when the ID is invalid
+ * or the test case does not exist.
  */
-export async function findTestCaseById(testCaseId: string) {
+export async function findTestCaseById(
+    testCaseId: string
+) {
+
     if (!mongoose.isValidObjectId(testCaseId)) {
         return null;
     }
 
-    return TestCaseModel.findById(testCaseId);
+    return TestCaseModel.findById(
+        testCaseId
+    );
 }
 
 
 /**
  * Find all test cases belonging to a problem.
  *
- * The judge uses this function to retrieve both
- * public and hidden test cases.
+ * Used internally by the judge.
+ *
+ * Returns both public and hidden test cases.
  */
-export async function findTestCasesByProblemId(problemId: string) {
+export async function findTestCasesByProblemId(
+    problemId: string
+) {
+
     if (!mongoose.isValidObjectId(problemId)) {
         return [];
     }
 
     return TestCaseModel
         .find({
-            problemId: new mongoose.Types.ObjectId(problemId),
+            problemId: new mongoose.Types.ObjectId(
+                problemId
+            ),
         })
         .sort({
             createdAt: 1,
@@ -47,18 +66,23 @@ export async function findTestCasesByProblemId(problemId: string) {
 
 
 /**
- * Find only public test cases for a problem.
+ * Find only public test cases.
  *
- * These can safely be exposed through an API.
+ * These test cases can be exposed to users.
  */
-export async function findPublicTestCasesByProblemId(problemId: string) {
+export async function findPublicTestCasesByProblemId(
+    problemId: string
+) {
+
     if (!mongoose.isValidObjectId(problemId)) {
         return [];
     }
 
     return TestCaseModel
         .find({
-            problemId: new mongoose.Types.ObjectId(problemId),
+            problemId: new mongoose.Types.ObjectId(
+                problemId
+            ),
             isHidden: false,
         })
         .sort({
@@ -68,18 +92,23 @@ export async function findPublicTestCasesByProblemId(problemId: string) {
 
 
 /**
- * Find only hidden test cases for a problem.
+ * Find only hidden test cases.
  *
- * This should be used internally by the judge.
+ * These are used internally by the judge.
  */
-export async function findHiddenTestCasesByProblemId(problemId: string) {
+export async function findHiddenTestCasesByProblemId(
+    problemId: string
+) {
+
     if (!mongoose.isValidObjectId(problemId)) {
         return [];
     }
 
     return TestCaseModel
         .find({
-            problemId: new mongoose.Types.ObjectId(problemId),
+            problemId: new mongoose.Types.ObjectId(
+                problemId
+            ),
             isHidden: true,
         })
         .sort({
@@ -91,7 +120,18 @@ export async function findHiddenTestCasesByProblemId(problemId: string) {
 /**
  * Update a test case.
  */
-export async function updateTestCase(testCaseId: string, data: Partial<Pick<TestCase, "input" | "expectedOutput" | "isHidden">>) {
+export async function updateTestCase(
+    testCaseId: string,
+    data: Partial<
+        Pick<
+            TestCase,
+            "input" |
+            "expectedOutput" |
+            "isHidden"
+        >
+    >
+) {
+
     if (!mongoose.isValidObjectId(testCaseId)) {
         return null;
     }
@@ -112,7 +152,10 @@ export async function updateTestCase(testCaseId: string, data: Partial<Pick<Test
 /**
  * Delete a test case.
  */
-export async function deleteTestCase(testCaseId: string) {
+export async function deleteTestCase(
+    testCaseId: string
+) {
+
     if (!mongoose.isValidObjectId(testCaseId)) {
         return null;
     }

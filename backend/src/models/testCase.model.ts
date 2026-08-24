@@ -28,22 +28,24 @@ const TestCaseSchema = new Schema<TestCase>(
             type: Schema.Types.ObjectId,
             ref: "Problem",
             required: [true, "Problem reference is required"],
+            index: true,
         },
 
         input: {
             type: String,
             required: [true, "Test case input is required"],
+            trim: true,
         },
 
         expectedOutput: {
             type: String,
             required: [true, "Expected output is required"],
+            trim: true,
         },
 
         isHidden: {
             type: Boolean,
             default: true,
-            required: true,
         },
     },
     {
@@ -53,19 +55,12 @@ const TestCaseSchema = new Schema<TestCase>(
 
 
 /**
- * Used when fetching all test cases belonging to a problem.
- */
-TestCaseSchema.index({
-    problemId: 1,
-});
-
-
-/**
- * Used when the judge fetches hidden/public test cases
- * for a particular problem.
+ * Used when fetching test cases by problem
+ * and filtering by visibility.
  *
- * This also avoids scanning all test cases belonging
- * to the problem when filtering by visibility.
+ * Example:
+ *
+ * { problemId: X, isHidden: true }
  */
 TestCaseSchema.index({
     problemId: 1,
@@ -76,7 +71,10 @@ TestCaseSchema.index({
 /**
  * Create Mongoose model.
  */
-const TestCaseModel = mongoose.model<TestCase>("TestCase", TestCaseSchema);
+const TestCaseModel = mongoose.model<TestCase>(
+    "TestCase",
+    TestCaseSchema
+);
 
 
 export default TestCaseModel;

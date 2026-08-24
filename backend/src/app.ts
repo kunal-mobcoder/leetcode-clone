@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import problemRoutes from "./routes/problem.routes.js";
+import testCaseRoutes from "./routes/testCase.routes.js";
+import submissionRoutes from "./routes/submission.routes.js";
 import { errorMiddleware, } from "./middleware/error.middleware.js";
 
 
@@ -17,6 +19,8 @@ app.use(express.json({ limit: '10KB' }))
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/problems", problemRoutes);
+app.use("/api/submissions", submissionRoutes);
+app.use("/api/problems/:problemId/test-cases", testCaseRoutes);
 
 
 app.use(errorMiddleware);
