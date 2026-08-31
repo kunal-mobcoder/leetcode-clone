@@ -1,14 +1,10 @@
 import mongoose from "mongoose";
 
-import * as testCaseRepository
-    from "../repositories/testCase.repository.js";
+import * as testCaseRepository from "../repositories/testCase.repository.js";
 
-import * as problemRepository
-    from "../repositories/problem.repository.js";
+import * as problemRepository from "../repositories/problem.repository.js";
 
-import type {
-    TestCase,
-} from "../models/testCase.model.js";
+import type { TestCase, } from "../models/testCase.model.js";
 
 import { AppError } from "../utils/AppError.js";
 
@@ -31,54 +27,31 @@ export async function createTestCaseService(
      * Validate problem ID.
      */
     if (!mongoose.isValidObjectId(problemId)) {
-        throw new AppError(
-            "Invalid problem ID",
-            400
-        );
+        throw new AppError("Invalid problem ID", 400);
     }
-
 
     /**
      * Make sure the problem exists.
      */
-    const problem =
-        await problemRepository.findProblemById(
-            problemId
-        );
-
+    const problem = await problemRepository.findProblemById(problemId);
 
     if (!problem) {
-        throw new AppError(
-            "Problem not found",
-            404
-        );
+        throw new AppError("Problem not found", 404);
     }
-
 
     /**
      * Archived problems should not be modified.
      */
     if (problem.status === "archived") {
-        throw new AppError(
-            "Archived problems cannot have test cases",
-            400
-        );
+        throw new AppError("Archived problems cannot have test cases", 400);
     }
-
 
     /**
      * Attach the problem ID to the test case.
      */
-    const testCaseData = {
-        ...data,
-        problemId:
-            new mongoose.Types.ObjectId(problemId),
-    };
+    const testCaseData = { ...data, problemId: new mongoose.Types.ObjectId(problemId) };
 
-
-    return testCaseRepository.createTestCase(
-        testCaseData
-    );
+    return testCaseRepository.createTestCase(testCaseData);
 }
 
 

@@ -1,22 +1,25 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "This is the backend of leetcode clone.",
   "license": "ISC",
   "author": "kunal",
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "npx tsx index.js"
+    "start": "npx tsx index.js",
+    "worker": "tsx src/workers/submission.worker.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.3.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.1",
+    "redis": "^6.2.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

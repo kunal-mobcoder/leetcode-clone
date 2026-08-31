@@ -1,8 +1,4 @@
-import type {
-    Request,
-    Response,
-    NextFunction,
-} from "express";
+import type { Request, Response, NextFunction, } from "express";
 
 import {
     createTestCaseService,
@@ -12,14 +8,9 @@ import {
     deleteTestCaseService,
 } from "../services/testCase.service.js";
 
+import type { CreateTestCaseInput, } from "../schemas/testCase/createTestCase.schema.js";
 
-import type {
-    CreateTestCaseInput,
-} from "../schemas/testCase/createTestCase.schema.js";
-
-import type {
-    UpdateTestCaseInput,
-} from "../schemas/testCase/updateTestCase.schema.js";
+import type { UpdateTestCaseInput, } from "../schemas/testCase/updateTestCase.schema.js";
 
 
 /**
@@ -38,28 +29,16 @@ export async function createTestCaseController(
 ) {
 
     try {
+        const { problemId, } = req.params;
 
-        const {
-            problemId,
-        } = req.params;
-
-
-        const testCase =
-            await createTestCaseService(
-                problemId,
-                req.body
-            );
-
+        const testCase = await createTestCaseService(problemId, req.body);
 
         return res.status(201).json({
-            message:
-                "Test case created successfully",
-
+            message: "Test case created successfully",
             testCase,
         });
 
     } catch (error) {
-
         next(error);
     }
 }
@@ -83,24 +62,15 @@ export async function getTestCasesController(
 ) {
 
     try {
+        const { problemId, } = req.params;
 
-        const {
-            problemId,
-        } = req.params;
-
-
-        const testCases =
-            await getTestCasesByProblemService(
-                problemId
-            );
-
+        const testCases = await getTestCasesByProblemService(problemId);
 
         return res.status(200).json({
             testCases,
         });
 
     } catch (error) {
-
         next(error);
     }
 }
@@ -124,24 +94,15 @@ export async function getPublicTestCasesController(
 ) {
 
     try {
+        const { problemId } = req.params;
 
-        const {
-            problemId,
-        } = req.params;
-
-
-        const testCases =
-            await getPublicTestCasesByProblemService(
-                problemId
-            );
-
+        const testCases = await getPublicTestCasesByProblemService(problemId);
 
         return res.status(200).json({
             testCases,
         });
 
     } catch (error) {
-
         next(error);
     }
 }
@@ -168,30 +129,16 @@ export async function updateTestCaseController(
 ) {
 
     try {
+        const { problemId, testCaseId, } = req.params;
 
-        const {
-            problemId,
-            testCaseId,
-        } = req.params;
-
-
-        const testCase =
-            await updateTestCaseService(
-                problemId,
-                testCaseId,
-                req.body
-            );
-
+        const testCase = await updateTestCaseService(problemId, testCaseId, req.body);
 
         return res.status(200).json({
-            message:
-                "Test case updated successfully",
-
+            message: "Test case updated successfully",
             testCase,
         });
 
     } catch (error) {
-
         next(error);
     }
 }
@@ -214,26 +161,15 @@ export async function deleteTestCaseController(
 ) {
 
     try {
+        const { problemId, testCaseId } = req.params;
 
-        const {
-            problemId,
-            testCaseId,
-        } = req.params;
-
-
-        await deleteTestCaseService(
-            problemId,
-            testCaseId
-        );
-
+        await deleteTestCaseService(problemId, testCaseId);
 
         return res.status(200).json({
-            message:
-                "Test case deleted successfully",
+            message: "Test case deleted successfully",
         });
 
     } catch (error) {
-
         next(error);
     }
 }

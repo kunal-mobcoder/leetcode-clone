@@ -7,6 +7,8 @@ const envSchema = z.object({
 
     MONGODB_URI: z.string(),
 
+    REDIS_URL: z.string().url("Invalid Redis URL format"),
+
     ACCESS_TOKEN_PRIVATE_KEY: z.string().min(1),
 
     REFRESH_TOKEN_PRIVATE_KEY: z.string().min(1),

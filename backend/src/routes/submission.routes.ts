@@ -5,6 +5,7 @@ import authenticate
 
 import {
     validateBody,
+    validateQuery,
 } from "../middleware/validate.middleware.js";
 
 import {
@@ -12,8 +13,13 @@ import {
 } from "../schemas/submission/createSubmission.schema.js";
 
 import {
+    submissionQuerySchema,
+} from "../schemas/submission/submissionQuery.schema.js";
+
+import {
     createSubmissionController,
     getSubmissionByIdController,
+    getMySubmissionsController,
 } from "../controllers/submission.controller.js";
 
 
@@ -48,8 +54,25 @@ router.post(
 
 
 /**
+ * @route GET /api/submissions/my
+ * @description Get submissions belonging to the authenticated user
+ * @access Authenticated users
+ *
+ * Supports pagination:
+ *
+ * ?page=1&limit=20
+ */
+router.get(
+    "/my",
+    authenticate,
+    validateQuery(submissionQuerySchema),
+    getMySubmissionsController
+);
+
+
+/**
  * @route GET /api/submissions/:id
- * @description Get a user's submission by ID
+ * @description Get a submission by ID
  * @access Authenticated users
  *
  * Users can only access their own submissions.
@@ -61,4 +84,4 @@ router.get(
 );
 
 
-export default router;  
+export default router;
