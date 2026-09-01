@@ -12,12 +12,11 @@ import type {
 /**
  * Data required to create a submission.
  *
- * The userId comes from the authenticated user.
- * The problemId, code and language come from the request.
+ * Status is intentionally not accepted here.
  *
- * Status is intentionally NOT accepted here.
+ * Every newly created submission starts as:
  *
- * Every newly created submission must start as "pending".
+ * pending
  */
 interface CreateSubmissionData {
     userId: mongoose.Types.ObjectId;
@@ -28,15 +27,8 @@ interface CreateSubmissionData {
 
 
 /**
- * Data that can be updated after the judge processes
- * the submission.
- *
- * The judge will use this to store:
- *
- * - final status
- * - execution runtime
- * - memory usage
- * - failed test case information
+ * Data that can be updated after the judge
+ * processes a submission.
  */
 interface UpdateSubmissionResultData {
     status: SubmissionStatus;
@@ -49,35 +41,24 @@ interface UpdateSubmissionResultData {
 /**
  * Create a new submission.
  *
- * Every submission starts with:
- *
- * pending
- *
- * The judge will later move it through the submission
- * lifecycle.
+ * New submissions always start with "pending".
  */
 export async function createSubmission(
     data: CreateSubmissionData
 ) {
-
     return SubmissionModel.create({
         ...data,
-
         status: "pending",
     });
 }
 
 
 /**
- * Find a submission by its ID.
- *
- * Returns null when the supplied ID is not a valid
- * MongoDB ObjectId or when the submission doesn't exist.
+ * Find a submission by ID.
  */
 export async function findSubmissionById(
     submissionId: string
 ) {
-
     if (!mongoose.isValidObjectId(submissionId)) {
         return null;
     }
@@ -89,24 +70,22 @@ export async function findSubmissionById(
 
 
 /**
- * Find submissions created by a particular user.
+ * Find all submissions belonging to a user.
  *
- * Results are ordered from newest to oldest.
+ * Newest submissions are returned first.
  */
 export async function findSubmissionsByUserId(
     userId: string,
     skip: number,
     limit: number
 ) {
-
     if (!mongoose.isValidObjectId(userId)) {
         return [];
     }
 
     return SubmissionModel
         .find({
-            userId:
-                new mongoose.Types.ObjectId(userId),
+            userId: new mongoose.Types.ObjectId(userId),
         })
         .sort({
             createdAt: -1,
@@ -117,49 +96,42 @@ export async function findSubmissionsByUserId(
 
 
 /**
- * Count the total number of submissions
- * created by a user.
+ * Count all submissions belonging to a user.
  */
 export async function countSubmissionsByUserId(
     userId: string
 ) {
-
     if (!mongoose.isValidObjectId(userId)) {
         return 0;
     }
 
     return SubmissionModel.countDocuments({
-        userId:
-            new mongoose.Types.ObjectId(userId),
+        userId: new mongoose.Types.ObjectId(userId),
     });
 }
 
 
 /**
- * Find submissions for a particular problem.
+ * Find all submissions for a particular problem.
  *
- * Results are ordered from newest to oldest.
+ * Primarily useful for:
  *
- * This can later be useful for:
- *
- * - admin submission monitoring
+ * - admin monitoring
  * - problem statistics
- * - leaderboard calculations
+ * - submission analytics
  */
 export async function findSubmissionsByProblemId(
     problemId: string,
     skip: number,
     limit: number
 ) {
-
     if (!mongoose.isValidObjectId(problemId)) {
         return [];
     }
 
     return SubmissionModel
         .find({
-            problemId:
-                new mongoose.Types.ObjectId(problemId),
+            problemId: new mongoose.Types.ObjectId(problemId),
         })
         .sort({
             createdAt: -1,
@@ -170,28 +142,86 @@ export async function findSubmissionsByProblemId(
 
 
 /**
- * Count the total number of submissions
- * for a particular problem.
+ * Count all submissions for a particular problem.
  */
 export async function countSubmissionsByProblemId(
     problemId: string
 ) {
+    if (!mongoose.isValidObjectId(problemId)) {
+        return 0;
+    }
+
+    return SubmissionModel.countDocuments({
+        problemId: new mongoose.Types.ObjectId(problemId),
+    });
+}
+
+
+/**
+ * Find submissions made by a specific user
+ * for a specific problem.
+ *
+ * Used for:
+ *
+ * - user's submission history for a problem
+ * - problem submission page
+ */
+export async function findSubmissionsByUserIdAndProblemId(
+    userId: string,
+    problemId: string,
+    skip: number,
+    limit: number
+) {
+    if (!mongoose.isValidObjectId(userId)) {
+        return [];
+    }
+
+    if (!mongoose.isValidObjectId(problemId)) {
+        return [];
+    }
+
+    return SubmissionModel
+        .find({
+            userId: new mongoose.Types.ObjectId(userId),
+
+            problemId: new mongoose.Types.ObjectId(problemId),
+        })
+        .sort({
+            createdAt: -1,
+        })
+        .skip(skip)
+        .limit(limit);
+}
+
+
+/**
+ * Count submissions made by a user
+ * for a particular problem.
+ */
+export async function countSubmissionsByUserIdAndProblemId(
+    userId: string,
+    problemId: string
+) {
+    if (!mongoose.isValidObjectId(userId)) {
+        return 0;
+    }
 
     if (!mongoose.isValidObjectId(problemId)) {
         return 0;
     }
 
     return SubmissionModel.countDocuments({
-        problemId:
-            new mongoose.Types.ObjectId(problemId),
+        userId: new mongoose.Types.ObjectId(userId),
+
+        problemId: new mongoose.Types.ObjectId(problemId),
     });
 }
 
 
 /**
- * Update the result of a submission.
+ * Update the complete result of a submission.
  *
- * This is primarily intended for the judge system.
+ * The judge will use this after execution.
  *
  * Example:
  *
@@ -201,18 +231,18 @@ export async function countSubmissionsByProblemId(
  *    ↓
  * accepted
  *
- * or
+ * or:
  *
  * wrong_answer
  * runtime_error
  * compile_error
- * etc.
+ * time_limit_exceeded
+ * system_error
  */
 export async function updateSubmissionResult(
     submissionId: string,
     data: UpdateSubmissionResultData
 ) {
-
     if (!mongoose.isValidObjectId(submissionId)) {
         return null;
     }
@@ -233,14 +263,13 @@ export async function updateSubmissionResult(
                 }),
 
                 ...(data.failedTestCase !== undefined && {
-                    failedTestCase:
-                        data.failedTestCase,
+                    failedTestCase: data.failedTestCase,
                 }),
             },
         },
 
         {
-            new: true,
+            returnDocument: "after",
             runValidators: true,
         }
     );
@@ -250,9 +279,6 @@ export async function updateSubmissionResult(
 /**
  * Update only the submission status.
  *
- * Useful when the judge needs to transition
- * the submission between states.
- *
  * Example:
  *
  * pending → running
@@ -261,7 +287,6 @@ export async function updateSubmissionStatus(
     submissionId: string,
     status: SubmissionStatus
 ) {
-
     if (!mongoose.isValidObjectId(submissionId)) {
         return null;
     }
@@ -276,38 +301,8 @@ export async function updateSubmissionStatus(
         },
 
         {
-            new: true,
+            returnDocument: "after",
             runValidators: true,
         }
     );
-}
-
-
-export async function findSubmissionsByUserIdAndProblemId(
-    userId: string,
-    problemId: string,
-    skip: number,
-    limit: number
-) {
-    return SubmissionModel
-        .find({
-            userId: new mongoose.Types.ObjectId(userId),
-            problemId: new mongoose.Types.ObjectId(problemId),
-        })
-        .sort({
-            createdAt: -1,
-        })
-        .skip(skip)
-        .limit(limit);
-}
-
-
-export async function countSubmissionsByUserIdAndProblemId(
-    userId: string,
-    problemId: string
-) {
-    return SubmissionModel.countDocuments({
-        userId: new mongoose.Types.ObjectId(userId),
-        problemId: new mongoose.Types.ObjectId(problemId),
-    });
 }

@@ -5,9 +5,9 @@
   "license": "ISC",
   "author": "kunal",
   "type": "module",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
-    "start": "npx tsx index.js",
+    "start": "tsx index.ts",
     "worker": "tsx src/workers/submission.worker.ts"
   },
   "dependencies": {
@@ -28,6 +28,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.2.0",
+    "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   }
 }
