@@ -1,11 +1,7 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { mkdtemp, writeFile, rm, } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
-
-const execFileAsync = promisify(execFile);
 
 
 export type ExecutionResult =
@@ -28,6 +24,11 @@ export type ExecutionResult =
         type: "compile_error";
         output: string;
         runtime: number;
+    }
+    | {
+        type: "system_error";
+        output: string;
+        runtime: number;
     };
 
 
@@ -48,7 +49,7 @@ const LANGUAGE_CONFIG = {
     java: {
         image: "eclipse-temurin:21-jdk",
         sourceFile: "Main.java",
-        command: "javac /code/Main.java && java -cp /code Main",
+        command: "mkdir -p /tmp/classes && javac -d /tmp/classes /code/Main.java && java -cp /tmp/classes Main",
     },
 
     cpp: {
@@ -60,8 +61,7 @@ const LANGUAGE_CONFIG = {
 } as const;
 
 
-export type SupportedLanguage =
-    keyof typeof LANGUAGE_CONFIG;
+export type SupportedLanguage = keyof typeof LANGUAGE_CONFIG;
 
 
 interface ExecuteCodeOptions {
@@ -72,203 +72,191 @@ interface ExecuteCodeOptions {
 }
 
 
-export async function executeCode(
-    options: ExecuteCodeOptions
-): Promise<ExecutionResult> {
-
-    const {
-        code,
-        language,
-        input,
-        timeoutMs = 2000,
-    } = options;
+interface SpawnResult {
+    stdout: string;
+    stderr: string;
+    exitCode: number | null;
+    timedOut: boolean;
+}
 
 
-    const config =
-        LANGUAGE_CONFIG[language];
+function runDocker(args: string[], input: string, timeoutMs: number): Promise<SpawnResult> {
+    return new Promise(
+        (resolve, reject) => {
+            const child = spawn(
+                "docker",
+                args,
+                {
+                    stdio: ["pipe", "pipe", "pipe",],
+                }
+            );
+
+            let stdout = "";
+            let stderr = "";
+            let timedOut = false;
+
+            child.stdout.on("data", (chunk) => {
+                stdout += chunk.toString();
+            });
+
+            child.stderr.on("data", (chunk) => {
+                stderr += chunk.toString();
+            });
+
+            const timeout = setTimeout(() => {
+                timedOut = true;
+                child.kill("SIGKILL");
+            },
+                timeoutMs
+            );
+
+            child.on("error", (error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+
+            child.on("close", (exitCode) => {
+                clearTimeout(timeout);
+                resolve({ stdout, stderr, exitCode, timedOut });
+            });
+
+            child.stdin.write(input);
+            child.stdin.end();
+        }
+    );
+}
 
 
-    const tempDirectory =
-        await mkdtemp(
-            path.join(
-                tmpdir(),
-                "leetcode-judge-"
-            )
-        );
+export async function executeCode(options: ExecuteCodeOptions): Promise<ExecutionResult> {
+    const { code, language, input, timeoutMs = 2000, } = options;
 
+    const config = LANGUAGE_CONFIG[language];
 
-    const sourcePath =
-        path.join(
-            tempDirectory,
-            config.sourceFile
-        );
+    const tempDirectory = await mkdtemp(path.join(tmpdir(), "leetcode-judge-"));
 
+    const sourcePath = path.join(tempDirectory, config.sourceFile);
 
     try {
+        await writeFile(sourcePath, code, "utf8");
 
-        await writeFile(
-            sourcePath,
-            code,
-            "utf8"
-        );
+        const startTime = process.hrtime.bigint();
 
-
-        const startTime =
-            process.hrtime.bigint();
-
-
+        let result: SpawnResult;
         try {
+            result = await runDocker(
+                [
+                    "run",
+                    "--rm",
+                    "-i",
 
-            const { stdout, stderr } =
-                await execFileAsync(
-                    "docker",
-                    [
-                        "run",
+                    // No network access
+                    "--network",
+                    "none",
 
-                        "--rm",
+                    // CPU limit
+                    "--cpus",
+                    "1",
 
-                        "-i",
+                    // Memory limit
+                    "--memory",
+                    "128m",
 
-                        // No network access.
-                        "--network",
-                        "none",
+                    // Process limit
+                    "--pids-limit",
+                    "64",
 
-                        // CPU limit.
-                        "--cpus",
-                        "1",
+                    // Remove Linux capabilities
+                    "--cap-drop",
+                    "ALL",
 
-                        // Memory limit.
-                        "--memory",
-                        "128m",
+                    // Prevent privilege escalation
+                    "--security-opt",
+                    "no-new-privileges",
 
-                        // Limit number of processes.
-                        "--pids-limit",
-                        "64",
+                    // Read-only filesystem
+                    "--read-only",
 
-                        // Drop Linux capabilities.
-                        "--cap-drop",
-                        "ALL",
+                    // Writable temporary filesystem
+                    "--tmpfs",
+                    "/tmp:rw,nosuid,size=64m",
 
-                        // Prevent privilege escalation.
-                        "--security-opt",
-                        "no-new-privileges",
+                    // User code is read-only
+                    "-v",
+                    `${tempDirectory}:/code:ro`,
 
-                        // Read-only container filesystem.
-                        "--read-only",
+                    // Image
+                    config.image,
 
-                        // Temporary writable filesystem.
-                        "--tmpfs",
-                        "/tmp:rw,nosuid,size=64m",
+                    // Shell
+                    "sh",
+                    "-c",
 
-                        // Mount source code read-only.
-                        "-v",
-                        `${tempDirectory}:/code:ro`,
+                    // Command
+                    config.command,
+                ],
+                input,
+                timeoutMs
+            );
 
-                        config.image,
+        } catch (error) {
+            const endTime = process.hrtime.bigint();
 
-                        "sh",
-                        "-c",
-                        config.command,
-                    ],
-                    {
-                        input,
-
-                        timeout: timeoutMs,
-
-                        maxBuffer:
-                            1024 * 1024,
-                    }
-                );
-
-
-            const endTime =
-                process.hrtime.bigint();
-
-
-            const runtime =
-                Number(
-                    endTime - startTime
-                ) / 1_000_000;
-
+            const runtime = Number(endTime - startTime) / 1_000_000;
 
             return {
-                type: "success",
-                output: stdout,
+                type: "system_error",
+                output: error instanceof Error ? error.message : "Docker execution failed",
                 runtime,
             };
 
-        } catch (error: any) {
+        }
 
-            const endTime =
-                process.hrtime.bigint();
+        const endTime = process.hrtime.bigint();
+
+        const runtime = Number(endTime - startTime) / 1_000_000;
+
+        // Timeout
+        if (result.timedOut) {
+            return {
+                type: "timeout",
+                output: result.stderr || "Execution timed out",
+                runtime,
+            };
+
+        }
+
+        // Successful execution
+        if (result.exitCode === 0) {
+            return {
+                type: "success",
+                output: result.stdout,
+                runtime,
+            };
+
+        }
+
+        // Non-zero exit code
+        const output = result.stderr || result.stdout || "Program exited with an error";
 
 
-            const runtime =
-                Number(
-                    endTime - startTime
-                ) / 1_000_000;
-
-
-            if (
-                error?.killed ||
-                error?.code === "ETIMEDOUT"
-            ) {
-
+        //  For now Java/C++ compilation errors are detected using compiler output, we will improve this by separating compilation from execution later.
+        if (language === "java" || language === "cpp") {
+            if (output.includes("error:") || output.includes("Error:")) {
                 return {
-                    type: "timeout",
-                    output:
-                        error?.stderr ||
-                        "Execution timed out",
+                    type: "compile_error",
+                    output,
                     runtime,
                 };
             }
-
-
-            const output =
-                (
-                    error?.stderr ||
-                    error?.stdout ||
-                    error?.message ||
-                    ""
-                ).toString();
-
-
-            /*
-             * Java compilation and C++ compilation
-             * errors are treated as compile errors.
-             *
-             * For JavaScript and Python, execution
-             * errors are runtime errors.
-             */
-
-            if (
-                language === "java" ||
-                language === "cpp"
-            ) {
-
-                if (
-                    output.includes("error:") ||
-                    output.includes("Error:")
-                ) {
-
-                    return {
-                        type: "compile_error",
-                        output,
-                        runtime,
-                    };
-                }
-            }
-
-
-            return {
-                type: "runtime_error",
-                output,
-                runtime,
-            };
         }
 
-    } finally {
+        return {
+            type: "runtime_error",
+            output,
+            runtime,
+        };
 
+    } finally {
         await rm(
             tempDirectory,
             {
