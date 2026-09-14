@@ -95,8 +95,15 @@ function runDocker(args: string[], input: string, timeoutMs: number): Promise<Sp
             let stderr = "";
             let timedOut = false;
 
+            const MAX_OUTPUT_SIZE = 1024 * 1024;
+
             child.stdout.on("data", (chunk) => {
+
                 stdout += chunk.toString();
+
+                if (Buffer.byteLength(stdout, "utf8") > MAX_OUTPUT_SIZE) {
+                    child.kill("SIGKILL");
+                }
             });
 
             child.stderr.on("data", (chunk) => {
