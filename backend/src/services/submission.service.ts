@@ -75,7 +75,18 @@ export async function createSubmissionService(
         language: data.language,
     });
 
-    await enqueueSubmission(submission._id.toString())
+    try {
+        await enqueueSubmission(submission._id.toString());
+    } catch (error) {
+        await submissionRepository.updateSubmissionResult(
+            submission._id.toString(),
+            {
+                status: "system_error",
+            }
+        );
+
+        throw error;
+    }
 
     return submission;
 }

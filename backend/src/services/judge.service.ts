@@ -131,8 +131,8 @@ export async function judgeSubmission(submissionId: string) {
                     runtime: Math.round(totalRuntime),
                     failedTestCase: {
                         input: testCase.input,
-                        expectedOutput: testCase.expectedOutput,
-                        actualOutput: result.output,
+                        expectedOutput: normalizeOutput(testCase.expectedOutput),
+                        actualOutput: normalizeOutput(result.output),
                     },
                 }
             );
