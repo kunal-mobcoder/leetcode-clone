@@ -1,211 +1,198 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
-import { Send, Loader2, CheckCircle2, XCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
-import { useProblemBySlug, usePublicTestCases } from '../hooks/useProblems';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../api/axios';
 import { useSubmitCode, useSubmissionStatus } from '../hooks/useSubmission';
+import { ExecutionConsole } from '../components/ExecutionConsole';
+import { Loader2 } from 'lucide-react';
 
-const SUPPORTED_LANGUAGES = [
-    { label: 'JavaScript', value: 'javascript', monaco: 'javascript' },
-    { label: 'Python', value: 'python', monaco: 'python' },
-    { label: 'Java', value: 'java', monaco: 'java' },
-    { label: 'C++', value: 'cpp', monaco: 'cpp' },
-];
+export interface Problem {
+    _id: string;
+    title: string;
+    slug: string;
+    description: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    tags: string[];
+    defaultCode?: Record<string, string>;
+}
 
 export const ProblemWorkspace: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
 
-    const { data: problem, isLoading: isProblemLoading, isError } = useProblemBySlug(slug || '');
-    const { data: publicTestCases } = usePublicTestCases(problem?._id);
-
-    const [language, setLanguage] = useState('javascript');
-    const [code, setCode] = useState('');
+    const [language, setLanguage] = useState<'javascript' | 'python' | 'cpp' | 'java'>('javascript');
+    const [code, setCode] = useState<string>('');
     const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
 
-    const submitMutation = useSubmitCode();
-    const { data: submissionResult, isLoading: isPolling } = useSubmissionStatus(activeSubmissionId);
+    // 1. Fetch Problem Details by Slug
+    const { data: problemData, isLoading: isLoadingProblem, error: problemError } = useQuery({
+        queryKey: ['problem', slug],
+        queryFn: async () => {
+            const response = await api.get<{ problem: Problem }>(`/problems/${slug}`);
+            return response.data.problem;
+        },
+        enabled: !!slug,
+    });
 
-    // Sync default code template when problem loads or language switches
+    // 2. Set default starter code whenever problem or language changes
     useEffect(() => {
-        if (problem) {
-            setCode(
-                problem.defaultCode?.[language] ||
-                `// Write your solution for ${problem.title}\n`
-            );
+        if (problemData?.defaultCode?.[language]) {
+            setCode(problemData.defaultCode[language]);
+        } else if (problemData) {
+            // Basic fallback starter code if defaultCode isn't provided by backend
+            const fallbacks: Record<string, string> = {
+                javascript: '// Write your solution here\nfunction main() {\n  \n}',
+                python: '# Write your solution here\ndef main():\n    pass',
+                cpp: '// Write your solution here\n#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}',
+                java: '// Write your solution here\npublic class Main {\n    public static void main(String[] args) {\n        \n    }\n}',
+            };
+            setCode(fallbacks[language] || '');
         }
-    }, [problem, language]);
+    }, [problemData, language]);
+
+    // 3. React Query Submission Hooks
+    const submitMutation = useSubmitCode();
+    const { data: submissionStatus } = useSubmissionStatus(activeSubmissionId);
+
+    // const handleSubmit = async () => {
+    //     if (!code.trim() || !problemData?._id) return;
+
+    //     try {
+    //         const response = await submitMutation.mutateAsync({
+    //             problemId: problemData._id, // Must be MongoDB _id, not the URL slug
+    //             language,
+    //             code,
+    //         });
+
+    //         if (response?.id) {
+    //             setActiveSubmissionId(response.id);
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to submit solution:', error);
+    //     }
+    // };
 
     const handleSubmit = async () => {
-        if (!problem) return;
+        if (!code.trim() || !problemData?._id) return;
+
         try {
             const res = await submitMutation.mutateAsync({
-                problemId: problem._id,
+                problemId: problemData._id,
                 language,
                 code,
             });
-            setActiveSubmissionId(res.id);
+
+            // Extract submission ID from nested `submission` property
+            const newSubmissionId =
+                res.submission?.id ||
+                res.submission?._id ||
+                res.id ||
+                res._id ||
+                res.submissionId;
+
+            if (newSubmissionId) {
+                setActiveSubmissionId(newSubmissionId);
+            } else {
+                console.error('Submission ID missing in backend response:', res);
+            }
         } catch (err) {
-            console.error('Submission error:', err);
+            console.error('Failed to execute submitMutation:', err);
         }
     };
 
-    const isExecuting = submitMutation.isPending || isPolling || submissionResult?.status === 'running';
-
-    if (isProblemLoading) {
+    if (isLoadingProblem) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 gap-3">
-                <Loader2 className="w-6 h-6 animate-spin" /> Loading problem workspace...
+            <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">
+                <Loader2 className="w-8 h-8 animate-spin mr-3 text-indigo-500" />
+                <span>Loading problem details...</span>
             </div>
         );
     }
 
-    if (isError || !problem) {
+    if (problemError || !problemData) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-300 gap-4">
-                <p>Problem not found.</p>
-                <Link to="/problems" className="text-blue-400 hover:underline flex items-center gap-1">
-                    <ArrowLeft className="w-4 h-4" /> Back to Problem Directory
-                </Link>
+            <div className="flex h-screen items-center justify-center bg-slate-950 text-rose-400">
+                <p>Failed to load problem. Please check if the slug is valid or if your backend API is running.</p>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen bg-slate-900 text-slate-100 overflow-hidden">
-            {/* Left Panel: Description & Sample Test Cases */}
-            <div className="w-1/2 p-6 overflow-y-auto border-r border-slate-800 flex flex-col justify-between">
-                <div>
-                    <Link to="/problems" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 mb-4 transition-colors">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Back to Problems
-                    </Link>
-                    <div className="flex items-center gap-3 mb-4">
-                        <h1 className="text-2xl font-bold">{problem.title}</h1>
-                        <span
-                            className={`px-2.5 py-0.5 rounded text-xs font-semibold capitalize ${problem.difficulty === 'easy'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                    : problem.difficulty === 'medium'
-                                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                }`}
-                        >
-                            {problem.difficulty}
-                        </span>
-                    </div>
-                    <div className="prose prose-invert max-w-none text-slate-300 mb-8 whitespace-pre-line text-sm">
-                        {problem.description}
-                    </div>
-
-                    {/* Sample Test Cases Section */}
-                    {publicTestCases && publicTestCases.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Example Test Cases</h3>
-                            {publicTestCases.map((tc, idx) => (
-                                <div key={tc._id} className="bg-slate-950 border border-slate-800 rounded p-3 text-xs font-mono space-y-1">
-                                    <span className="text-slate-500 font-bold">Case {idx + 1}:</span>
-                                    <p className="text-slate-300">Input: <span className="text-slate-100">{tc.input}</span></p>
-                                    <p className="text-slate-300">Expected Output: <span className="text-emerald-400">{tc.expectedOutput}</span></p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+        <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
+            {/* LEFT PANEL: Problem Details */}
+            <div className="w-1/2 flex flex-col border-r border-slate-800 p-6 overflow-y-auto">
+                <div className="flex items-center gap-3 mb-4">
+                    <h1 className="text-2xl font-bold text-slate-100">{problemData.title}</h1>
+                    <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${problemData.difficulty === 'easy'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : problemData.difficulty === 'medium'
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            }`}
+                    >
+                        {problemData.difficulty}
+                    </span>
                 </div>
+
+                {/* Problem Description */}
+                <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                    {problemData.description}
+                </div>
+
+                {/* Tags */}
+                {problemData.tags && problemData.tags.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-slate-800 flex flex-wrap gap-2">
+                        {problemData.tags.map((tag) => (
+                            <span key={tag} className="bg-slate-800 text-slate-400 text-xs px-2.5 py-1 rounded-md">
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* Right Panel: Code Editor & Console Output */}
-            <div className="w-1/2 flex flex-col h-full bg-slate-950">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-900">
+            {/* RIGHT PANEL: Code Editor & Execution Console */}
+            <div className="w-1/2 flex flex-col">
+                {/* Editor Toolbar */}
+                <div className="flex items-center justify-between p-3 border-b border-slate-800 bg-slate-900">
                     <select
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="bg-slate-800 text-slate-200 border border-slate-700 rounded px-3 py-1 text-sm focus:outline-none"
+                        onChange={(e) => setLanguage(e.target.value as any)}
+                        className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                        {SUPPORTED_LANGUAGES.map((lang) => (
-                            <option key={lang.value} value={lang.value}>
-                                {lang.label}
-                            </option>
-                        ))}
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python</option>
+                        <option value="cpp">C++</option>
+                        <option value="java">Java</option>
                     </select>
 
                     <button
                         onClick={handleSubmit}
-                        disabled={isExecuting}
-                        className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white rounded font-medium text-sm transition-colors"
+                        disabled={submitMutation.isPending}
+                        className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-sm px-5 py-1.5 rounded-lg transition shadow-md flex items-center gap-2"
                     >
-                        {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        Submit
+                        {submitMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {submitMutation.isPending ? 'Submitting...' : 'Submit'}
                     </button>
                 </div>
 
-                {/* Monaco Editor */}
-                <div className="flex-1 min-h-0">
-                    <Editor
-                        height="100%"
-                        theme="vs-dark"
-                        language={SUPPORTED_LANGUAGES.find((l) => l.value === language)?.monaco || 'javascript'}
-                        value={code}
-                        onChange={(val) => setCode(val || '')}
-                        options={{
-                            fontSize: 14,
-                            minimap: { enabled: false },
-                            automaticLayout: true,
-                            tabSize: 2,
-                        }}
+                {/* Code Input Area */}
+                <textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="w-full flex-1 p-4 bg-slate-950 text-slate-100 font-mono text-sm leading-relaxed resize-none focus:outline-none"
+                    placeholder="Write your code here..."
+                />
+
+                {/* Execution Output Console */}
+                <div className="h-1/3 border-t border-slate-800 p-4 bg-slate-900 overflow-y-auto">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                        Execution Output
+                    </h3>
+                    <ExecutionConsole
+                        isSubmitting={submitMutation.isPending}
+                        submission={submissionStatus}
                     />
-                </div>
-
-                {/* Execution Output Box */}
-                <div className="h-48 border-t border-slate-800 bg-slate-900 p-4 overflow-y-auto">
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Execution Console</h3>
-
-                    {isExecuting && (
-                        <div className="flex items-center gap-2 text-amber-400 text-sm">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Executing test cases in Docker sandbox...
-                        </div>
-                    )}
-
-                    {!isExecuting && submissionResult && (
-                        <div className="space-y-2">
-                            {submissionResult.status === 'accepted' && (
-                                <div className="flex items-center gap-2 text-emerald-400 font-semibold text-lg">
-                                    <CheckCircle2 className="w-5 h-5" /> Accepted
-                                    <span className="text-xs text-slate-400 font-normal">
-                                        (Runtime: {submissionResult.runtime}ms)
-                                    </span>
-                                </div>
-                            )}
-
-                            {submissionResult.status === 'wrong_answer' && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-rose-400 font-semibold text-lg">
-                                        <XCircle className="w-5 h-5" /> Wrong Answer
-                                    </div>
-                                    {submissionResult.failedTestCase && (
-                                        <div className="bg-slate-950 p-3 rounded text-xs font-mono border border-slate-800 space-y-1">
-                                            <p className="text-slate-400">Input: <span className="text-slate-200">{submissionResult.failedTestCase.input}</span></p>
-                                            <p className="text-slate-400">Expected: <span className="text-emerald-400">{submissionResult.failedTestCase.expectedOutput}</span></p>
-                                            <p className="text-slate-400">Actual: <span className="text-rose-400">{submissionResult.failedTestCase.actualOutput}</span></p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {(submissionResult.status === 'compile_error' || submissionResult.status === 'runtime_error') && (
-                                <div>
-                                    <div className="flex items-center gap-2 text-rose-400 font-semibold text-lg mb-1">
-                                        <AlertTriangle className="w-5 h-5" /> {submissionResult.status === 'compile_error' ? 'Compilation Error' : 'Runtime Error'}
-                                    </div>
-                                    <pre className="bg-slate-950 p-3 rounded text-xs font-mono text-rose-300 border border-slate-800 whitespace-pre-wrap">
-                                        {submissionResult.failedTestCase?.actualOutput || 'An error occurred during execution.'}
-                                    </pre>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {!isExecuting && !submissionResult && (
-                        <p className="text-slate-500 text-sm">Click Submit to process code execution against all test cases.</p>
-                    )}
                 </div>
             </div>
         </div>

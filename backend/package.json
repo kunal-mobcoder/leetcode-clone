@@ -7,8 +7,9 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "start": "tsx index.ts",
-    "worker": "tsx src/workers/submission.worker.ts"
+    "start:server": "tsx index.ts",
+    "start:worker": "tsx src/workers/submission.worker.ts",
+    "dev": "concurrently -n \"API,WORKER\" -c \"blue,magenta\" \"npm run start:server\" \"npm run start:worker\""
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -28,6 +29,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.2.0",
+    "concurrently": "^10.0.5",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   }
