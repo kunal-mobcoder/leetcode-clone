@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../api/axios';
+import axios, { api } from '../api/axios';
 
 export interface Problem {
     _id: string;
@@ -25,17 +25,22 @@ export interface TestCase {
 }
 
 // 1. Fetch paginated list of problems
-export function useProblems(page = 1, limit = 10, difficulty?: string) {
+export const useProblems = () => {
     return useQuery({
-        queryKey: ['problems', page, limit, difficulty],
+        queryKey: ['problems'],
         queryFn: async () => {
-            const { data } = await api.get<ProblemsResponse>('/problems', {
-                params: { page, limit, difficulty },
-            });
-            return data;
+            const response = await axios.get('/problems');
+            const data = response.data;
+
+            // Handle wrapped responses like { data: [...] } or { problems: [...] }
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.data)) return data.data;
+            if (Array.isArray(data?.problems)) return data.problems;
+
+            return [];
         },
     });
-}
+};
 
 // 2. Fetch single problem details by slug
 export function useProblemBySlug(slug: string) {

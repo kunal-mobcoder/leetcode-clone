@@ -1,75 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../api/axios';
+import Editor from '@monaco-editor/react';
+import { useProblems } from '../hooks/useProblems';
 import { useSubmitCode, useSubmissionStatus } from '../hooks/useSubmission';
 import { ExecutionConsole } from '../components/ExecutionConsole';
-import { Loader2 } from 'lucide-react';
-
-export interface Problem {
-    _id: string;
-    title: string;
-    slug: string;
-    description: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    tags: string[];
-    defaultCode?: Record<string, string>;
-}
+import { Play, Code2, Terminal, ChevronRight } from 'lucide-react';
 
 export const ProblemWorkspace: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
+    const { data: problems } = useProblems();
+    const problemData = problems?.find((p: any) => p.slug === slug);
 
-    const [language, setLanguage] = useState<'javascript' | 'python' | 'cpp' | 'java'>('javascript');
-    const [code, setCode] = useState<string>('');
+    const [language, setLanguage] = useState('javascript');
+    const [code, setCode] = useState('');
     const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
 
-    // 1. Fetch Problem Details by Slug
-    const { data: problemData, isLoading: isLoadingProblem, error: problemError } = useQuery({
-        queryKey: ['problem', slug],
-        queryFn: async () => {
-            const response = await api.get<{ problem: Problem }>(`/problems/${slug}`);
-            return response.data.problem;
-        },
-        enabled: !!slug,
-    });
+    const submitMutation = useSubmitCode();
+    const { data: submissionStatus, isLoading: isPolling } = useSubmissionStatus(activeSubmissionId);
 
-    // 2. Set default starter code whenever problem or language changes
+    // Set default code template when problem loads
     useEffect(() => {
-        if (problemData?.defaultCode?.[language]) {
-            setCode(problemData.defaultCode[language]);
-        } else if (problemData) {
-            // Basic fallback starter code if defaultCode isn't provided by backend
-            const fallbacks: Record<string, string> = {
-                javascript: '// Write your solution here\nfunction main() {\n  \n}',
-                python: '# Write your solution here\ndef main():\n    pass',
-                cpp: '// Write your solution here\n#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}',
-                java: '// Write your solution here\npublic class Main {\n    public static void main(String[] args) {\n        \n    }\n}',
-            };
-            setCode(fallbacks[language] || '');
+        if (problemData?.defaultCode) {
+            setCode(problemData.defaultCode[language] || `// Write your ${language} solution here`);
+        } else {
+            setCode(`function multiplyByTwo(n) {\n    return n * 2;\n}`);
         }
     }, [problemData, language]);
-
-    // 3. React Query Submission Hooks
-    const submitMutation = useSubmitCode();
-    const { data: submissionStatus } = useSubmissionStatus(activeSubmissionId);
-
-    // const handleSubmit = async () => {
-    //     if (!code.trim() || !problemData?._id) return;
-
-    //     try {
-    //         const response = await submitMutation.mutateAsync({
-    //             problemId: problemData._id, // Must be MongoDB _id, not the URL slug
-    //             language,
-    //             code,
-    //         });
-
-    //         if (response?.id) {
-    //             setActiveSubmissionId(response.id);
-    //         }
-    //     } catch (error) {
-    //         console.error('Failed to submit solution:', error);
-    //     }
-    // };
 
     const handleSubmit = async () => {
         if (!code.trim() || !problemData?._id) return;
@@ -81,7 +37,6 @@ export const ProblemWorkspace: React.FC = () => {
                 code,
             });
 
-            // Extract submission ID from nested `submission` property
             const newSubmissionId =
                 res.submission?.id ||
                 res.submission?._id ||
@@ -91,74 +46,27 @@ export const ProblemWorkspace: React.FC = () => {
 
             if (newSubmissionId) {
                 setActiveSubmissionId(newSubmissionId);
-            } else {
-                console.error('Submission ID missing in backend response:', res);
             }
         } catch (err) {
-            console.error('Failed to execute submitMutation:', err);
+            console.error('Submission failed:', err);
         }
     };
 
-    if (isLoadingProblem) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">
-                <Loader2 className="w-8 h-8 animate-spin mr-3 text-indigo-500" />
-                <span>Loading problem details...</span>
-            </div>
-        );
-    }
-
-    if (problemError || !problemData) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-slate-950 text-rose-400">
-                <p>Failed to load problem. Please check if the slug is valid or if your backend API is running.</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
-            {/* LEFT PANEL: Problem Details */}
-            <div className="w-1/2 flex flex-col border-r border-slate-800 p-6 overflow-y-auto">
-                <div className="flex items-center gap-3 mb-4">
-                    <h1 className="text-2xl font-bold text-slate-100">{problemData.title}</h1>
-                    <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${problemData.difficulty === 'easy'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : problemData.difficulty === 'medium'
-                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                            }`}
-                    >
-                        {problemData.difficulty}
-                    </span>
+        <div className="flex flex-col h-[calc(100vh-60px)] bg-chai-bg text-chai-text overflow-hidden">
+            {/* Top Workspace Bar */}
+            <div className="h-11 border-b border-chai-border px-6 flex items-center justify-between bg-chai-card text-xs">
+                <div className="flex items-center gap-2 text-chai-muted">
+                    <span>Problems</span>
+                    <ChevronRight className="w-3 h-3" />
+                    <span className="text-chai-text font-medium">{problemData?.title || slug}</span>
                 </div>
 
-                {/* Problem Description */}
-                <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
-                    {problemData.description}
-                </div>
-
-                {/* Tags */}
-                {problemData.tags && problemData.tags.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-slate-800 flex flex-wrap gap-2">
-                        {problemData.tags.map((tag) => (
-                            <span key={tag} className="bg-slate-800 text-slate-400 text-xs px-2.5 py-1 rounded-md">
-                                {tag}
-                            </span>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* RIGHT PANEL: Code Editor & Execution Console */}
-            <div className="w-1/2 flex flex-col">
-                {/* Editor Toolbar */}
-                <div className="flex items-center justify-between p-3 border-b border-slate-800 bg-slate-900">
+                <div className="flex items-center gap-3">
                     <select
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value as any)}
-                        className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="bg-chai-bg border border-chai-border text-chai-text px-2.5 py-1 rounded-md focus:outline-none text-xs font-mono"
                     >
                         <option value="javascript">JavaScript</option>
                         <option value="python">Python</option>
@@ -169,30 +77,82 @@ export const ProblemWorkspace: React.FC = () => {
                     <button
                         onClick={handleSubmit}
                         disabled={submitMutation.isPending}
-                        className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-sm px-5 py-1.5 rounded-lg transition shadow-md flex items-center gap-2"
+                        className="bg-chai-accent hover:bg-chai-accent-hover text-black font-semibold px-4 py-1.5 rounded-md flex items-center gap-1.5 transition text-xs disabled:opacity-50"
                     >
-                        {submitMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <Play className="w-3 h-3 fill-current" />
                         {submitMutation.isPending ? 'Submitting...' : 'Submit'}
                     </button>
                 </div>
+            </div>
 
-                {/* Code Input Area */}
-                <textarea
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    className="w-full flex-1 p-4 bg-slate-950 text-slate-100 font-mono text-sm leading-relaxed resize-none focus:outline-none"
-                    placeholder="Write your code here..."
-                />
+            {/* Main Split Grid */}
+            <div className="flex-1 grid grid-cols-12 overflow-hidden">
+                {/* Left Side: Problem Description */}
+                <div className="col-span-5 border-r border-chai-border p-6 overflow-y-auto space-y-4">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-bold tracking-tight">{problemData?.title}</h1>
+                        <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${problemData?.difficulty === 'Easy'
+                                ? 'border-green-800 text-green-400 bg-green-950/30'
+                                : 'border-yellow-800 text-yellow-400 bg-yellow-950/30'
+                                }`}
+                        >
+                            {problemData?.difficulty || 'Easy'}
+                        </span>
+                    </div>
 
-                {/* Execution Output Console */}
-                <div className="h-1/3 border-t border-slate-800 p-4 bg-slate-900 overflow-y-auto">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-                        Execution Output
-                    </h3>
-                    <ExecutionConsole
-                        isSubmitting={submitMutation.isPending}
-                        submission={submissionStatus}
-                    />
+                    <div className="text-xs text-chai-muted leading-relaxed font-sans border-b border-chai-border pb-4">
+                        {problemData?.description || 'Read a number and print its double.'}
+                    </div>
+
+                    {/* Example Section */}
+                    <div className="space-y-2 pt-2">
+                        <span className="text-xs font-semibold text-chai-text">Example 1:</span>
+                        <div className="bg-chai-card border border-chai-border rounded-lg p-3 font-mono text-xs space-y-1">
+                            <div><span className="text-chai-muted">Input:</span> n = 5</div>
+                            <div><span className="text-chai-muted">Output:</span> 10</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Side: Monaco Code Editor + Execution Console */}
+                <div className="col-span-7 flex flex-col bg-[#1e1e1e]">
+                    {/* Monaco Editor Header */}
+                    <div className="bg-chai-bg border-b border-chai-border px-4 py-2 flex items-center gap-2 text-xs text-chai-muted">
+                        <Code2 className="w-3.5 h-3.5 text-chai-accent" />
+                        <span className="font-mono">Code Editor</span>
+                    </div>
+
+                    {/* Monaco Editor Component */}
+                    <div className="flex-1">
+                        <Editor
+                            height="100%"
+                            theme="vs-dark"
+                            language={language === 'cpp' ? 'cpp' : language}
+                            value={code}
+                            onChange={(value) => setCode(value || '')}
+                            options={{
+                                fontSize: 13,
+                                minimap: { enabled: false },
+                                scrollBeyondLastLine: false,
+                                automaticLayout: true,
+                                tabSize: 2,
+                                fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+                            }}
+                        />
+                    </div>
+
+                    {/* Execution Output Panel */}
+                    <div className="h-48 border-t border-chai-border bg-chai-card flex flex-col">
+                        <div className="bg-chai-bg border-b border-chai-border px-4 py-2 flex items-center gap-2 text-xs text-chai-muted">
+                            <Terminal className="w-3.5 h-3.5 text-chai-accent" />
+                            <span className="font-mono">Execution Output</span>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto">
+                            <ExecutionConsole submission={submissionStatus} isLoading={isPolling} />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

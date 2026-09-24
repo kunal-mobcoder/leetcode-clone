@@ -1,59 +1,68 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Sun } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Code2, LogOut, User as UserIcon } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
 
     return (
-        <header className="h-16 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between">
-            <Link to="/problems" className="flex items-center gap-2.5 group">
-                <div className="p-1.5 bg-blue-600/10 border border-blue-500/20 rounded-lg group-hover:border-blue-500/40 transition-colors">
-                    <Code2 className="w-5 h-5 text-blue-400" />
+        <header className="w-full bg-chai-bg border-b border-chai-border text-xs text-chai-text">
+            {/* Top Banner Bar */}
+            <div className="flex items-center justify-between px-6 py-2 bg-[#120e0a] border-b border-[#26180c]">
+                <div className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-chai-accent animate-pulse" />
+                    <span className="font-semibold text-chai-accent">Learning September</span>
+                    <span className="text-chai-muted hidden sm:inline">• Everything is free for everyone until 30 Sept.</span>
                 </div>
-                <span className="font-bold text-slate-100 tracking-tight text-lg">
-                    Code<span className="text-blue-500">Arena</span>
-                </span>
-            </Link>
+                <div className="flex items-center gap-3">
+                    <button className="bg-chai-accent hover:bg-chai-accent-hover text-black font-semibold px-3 py-1 rounded-md text-xs transition">
+                        Start free
+                    </button>
+                    <span className="text-chai-muted cursor-pointer hover:text-chai-text">not now</span>
+                </div>
+            </div>
 
-            <div className="flex items-center gap-4">
-                {user ? (
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sm text-slate-300">
-                            <UserIcon className="w-4 h-4 text-slate-400" />
-                            <span className="font-medium text-slate-200">{user.username}</span>
-                        </div>
+            {/* Main Nav Header */}
+            <div className="flex items-center justify-between px-6 py-3">
+                <div className="flex items-center gap-8">
+                    <Link to="/" className="flex items-center gap-2 font-bold text-base tracking-tight">
+                        <span className="text-xl">☕</span>
+                        <span>Chai <span className="text-chai-accent">Visual</span></span>
+                    </Link>
+
+                    <nav className="hidden md:flex items-center gap-6 text-chai-muted font-medium">
+                        <Link to="/problems" className="hover:text-chai-text transition">Practice</Link>
+                        <a href="#" className="hover:text-chai-text transition">Learn ▾</a>
+                        <a href="#" className="hover:text-chai-text transition">Roadmap</a>
+                    </nav>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <button className="text-chai-muted hover:text-chai-text p-1.5 rounded-lg border border-chai-border">
+                        <Sun className="w-4 h-4" />
+                    </button>
+                    {user ? (
                         <button
-                            onClick={handleLogout}
-                            className="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition-colors"
-                            title="Logout"
+                            onClick={logout}
+                            className="text-chai-muted hover:text-chai-text font-medium"
                         >
-                            <LogOut className="w-4 h-4" />
+                            Log out
                         </button>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-2">
-                        <Link
-                            to="/login"
-                            className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-                        >
-                            Sign In
-                        </Link>
-                        <Link
-                            to="/signup"
-                            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors shadow-lg shadow-blue-600/20"
-                        >
-                            Sign Up
-                        </Link>
-                    </div>
-                )}
+                    ) : (
+                        <>
+                            <Link to="/login" className="text-chai-muted hover:text-chai-text font-medium">
+                                Log in
+                            </Link>
+                            <Link
+                                to="/signup"
+                                className="bg-white text-black font-medium px-4 py-1.5 rounded-lg hover:bg-slate-200 transition"
+                            >
+                                Get started
+                            </Link>
+                        </>
+                    )}
+                </div>
             </div>
         </header>
     );

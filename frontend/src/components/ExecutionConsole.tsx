@@ -1,76 +1,93 @@
 import React from 'react';
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react';
-import type { SubmissionStatusResponse } from '../hooks/useSubmission';
+import { CheckCircle2, XCircle, Clock, Loader2, AlertTriangle } from 'lucide-react';
 
-interface Props {
-    isSubmitting: boolean;
-    submission: SubmissionStatusResponse | undefined;
+interface ExecutionConsoleProps {
+    submission: any;
+    isLoading: boolean;
 }
 
-export const ExecutionConsole: React.FC<Props> = ({ isSubmitting, submission }) => {
-    if (isSubmitting || submission?.status === 'queued' || submission?.status === 'running') {
+export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({ submission, isLoading }) => {
+    if (isLoading) {
         return (
-            <div className="flex items-center gap-3 text-amber-400 text-sm font-medium py-2">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Executing test cases inside Docker container...</span>
+            <div className="flex items-center gap-2 text-chai-accent text-xs p-4 font-mono">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Evaluating submission test cases...</span>
             </div>
         );
     }
 
     if (!submission) {
         return (
-            <p className="text-slate-500 text-xs">
-                Click <span className="text-slate-300 font-semibold">Submit</span> to evaluate your solution against test cases.
-            </p>
+            <div className="text-chai-muted text-xs p-4 font-mono">
+                Click <strong className="text-chai-text">Submit</strong> to run your solution against test cases.
+            </div>
         );
     }
 
-    return (
-        <div className="space-y-3">
-            {/* Status Badges */}
-            {submission.status === 'accepted' && (
-                <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-base">
-                        <CheckCircle2 className="w-5 h-5" /> Accepted
-                    </div>
-                    {submission.runtime !== undefined && (
-                        <span className="text-xs text-slate-400 font-mono">
-                            Runtime: <span className="text-slate-200 font-semibold">{submission.runtime} ms</span>
-                        </span>
-                    )}
-                </div>
-            )}
+    const { status, runtime, failedTestCase, error } = submission;
 
-            {submission.status === 'wrong_answer' && (
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-rose-400 font-bold text-base">
-                        <XCircle className="w-5 h-5" /> Wrong Answer
-                    </div>
-                    {submission.failedTestCase && (
-                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 font-mono text-xs space-y-1.5">
-                            <div className="text-slate-400">Input: <span className="text-slate-200">{submission.failedTestCase.input}</span></div>
-                            <div className="text-slate-400">Expected: <span className="text-emerald-400">{submission.failedTestCase.expectedOutput}</span></div>
-                            <div className="text-slate-400">Actual: <span className="text-rose-400">{submission.failedTestCase.actualOutput}</span></div>
+    return (
+        <div className="p-4 font-mono text-xs space-y-3">
+            {/* Status Badge */}
+            <div className="flex items-center justify-between border-b border-chai-border pb-3">
+                <div className="flex items-center gap-2">
+                    {status === 'accepted' ? (
+                        <div className="flex items-center gap-1.5 text-green-400 font-bold">
+                            <CheckCircle2 className="w-4 h-4" /> Accepted
+                        </div>
+                    ) : status === 'pending' || status === 'running' || status === 'queued' ? (
+                        <div className="flex items-center gap-1.5 text-chai-accent font-bold">
+                            <Loader2 className="w-4 h-4 animate-spin" /> {status.toUpperCase()}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 text-red-400 font-bold">
+                            <XCircle className="w-4 h-4" /> {status.replace('_', ' ').toUpperCase()}
                         </div>
                     )}
                 </div>
-            )}
 
-            {(submission.status === 'compile_error' || submission.status === 'runtime_error') && (
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-rose-400 font-bold text-base">
-                        <AlertTriangle className="w-5 h-5" />
-                        {submission.status === 'compile_error' ? 'Compilation Error' : 'Runtime Error'}
+                {runtime !== undefined && (
+                    <div className="flex items-center gap-1 text-chai-muted text-[11px]">
+                        <Clock className="w-3 h-3" /> Runtime: {Math.round(runtime)} ms
                     </div>
-                    <pre className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 font-mono text-xs text-rose-300 whitespace-pre-wrap overflow-x-auto max-h-32">
-                        {submission.error || submission.failedTestCase?.actualOutput || 'Execution failed.'}
-                    </pre>
+                )}
+            </div>
+
+            {/* Error Message Display */}
+            {error && (
+                <div className="bg-red-950/30 border border-red-900 text-red-300 p-3 rounded-lg text-[11px] whitespace-pre-wrap">
+                    {error}
                 </div>
             )}
 
-            {submission.status === 'time_limit_exceeded' && (
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                    <Clock className="w-5 h-5" /> Time Limit Exceeded
+            {/* Failed Testcase Display */}
+            {failedTestCase && (
+                <div className="space-y-2 pt-1">
+                    <div className="text-chai-muted text-[10px] uppercase tracking-wider font-semibold">
+                        Failed Test Case
+                    </div>
+
+                    <div className="space-y-2 bg-chai-bg p-3 rounded-lg border border-chai-border text-[11px]">
+                        <div>
+                            <span className="text-chai-muted block mb-0.5">Input:</span>
+                            <code className="text-chai-text bg-chai-card px-2 py-1 rounded block">{failedTestCase.input}</code>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <span className="text-chai-muted block mb-0.5">Expected Output:</span>
+                                <code className="text-green-400 bg-chai-card px-2 py-1 rounded block">
+                                    {failedTestCase.expectedOutput}
+                                </code>
+                            </div>
+                            <div>
+                                <span className="text-chai-muted block mb-0.5">Your Output:</span>
+                                <code className="text-red-400 bg-chai-card px-2 py-1 rounded block">
+                                    {failedTestCase.actualOutput || 'no output'}
+                                </code>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

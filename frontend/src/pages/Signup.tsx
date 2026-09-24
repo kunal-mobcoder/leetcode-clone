@@ -1,121 +1,101 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Code2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowRight, Lock, Mail, User } from 'lucide-react';
 
 export const Signup: React.FC = () => {
-    const { register } = useAuth();
-    const navigate = useNavigate();
-
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const { signup } = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(null);
-        setIsSubmitting(true);
-
         try {
-            await register(username, email, password);
+            await signup(username, email, password);
             navigate('/problems');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create account');
-        } finally {
-            setIsSubmitting(false);
+            setError(err.response?.data?.message || 'Registration failed');
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="w-full max-w-md relative z-10">
-                <div className="flex flex-col items-center mb-8">
-                    <div className="p-3 bg-blue-600/10 border border-blue-500/20 rounded-2xl mb-3 shadow-inner">
-                        <Code2 className="w-8 h-8 text-blue-400" />
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight text-white">Create an account</h1>
-                    <p className="text-sm text-slate-400 mt-1">Start sharpening your coding skills today</p>
+        <div className="min-h-[calc(100vh-100px)] bg-chai-bg flex items-center justify-center p-6 text-chai-text">
+            <div className="w-full max-w-md border border-chai-border bg-chai-card rounded-2xl p-8 shadow-2xl space-y-6">
+                <div className="text-center space-y-2">
+                    <div className="text-3xl">☕</div>
+                    <h2 className="text-2xl font-bold tracking-tight">Create your account</h2>
+                    <p className="text-xs text-chai-muted">Get full access to all visual courses & editor</p>
                 </div>
 
-                <div className="glass-panel p-8 rounded-2xl">
-                    {error && (
-                        <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-xl text-sm mb-6">
-                            <AlertCircle className="w-4 h-4 shrink-0" />
-                            <span>{error}</span>
-                        </div>
-                    )}
+                {error && (
+                    <div className="p-3 bg-red-950/40 border border-red-800 text-red-400 text-xs rounded-lg text-center">
+                        {error}
+                    </div>
+                )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                                Username
-                            </label>
+                <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                    <div>
+                        <label className="block text-chai-muted font-medium mb-1.5">Username</label>
+                        <div className="flex items-center bg-chai-bg border border-chai-border rounded-lg px-3 py-2.5 focus-within:border-chai-accent transition">
+                            <User className="w-4 h-4 text-chai-muted mr-2" />
                             <input
                                 type="text"
                                 required
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 placeholder="johndoe"
-                                className="w-full glass-input px-4 py-2.5 rounded-xl text-sm"
+                                className="bg-transparent focus:outline-none w-full text-chai-text placeholder:text-chai-muted"
                             />
                         </div>
+                    </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                                Email Address
-                            </label>
+                    <div>
+                        <label className="block text-chai-muted font-medium mb-1.5">Email address</label>
+                        <div className="flex items-center bg-chai-bg border border-chai-border rounded-lg px-3 py-2.5 focus-within:border-chai-accent transition">
+                            <Mail className="w-4 h-4 text-chai-muted mr-2" />
                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="name@example.com"
-                                className="w-full glass-input px-4 py-2.5 rounded-xl text-sm"
+                                className="bg-transparent focus:outline-none w-full text-chai-text placeholder:text-chai-muted"
                             />
                         </div>
+                    </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                                Password
-                            </label>
+                    <div>
+                        <label className="block text-chai-muted font-medium mb-1.5">Password</label>
+                        <div className="flex items-center bg-chai-bg border border-chai-border rounded-lg px-3 py-2.5 focus-within:border-chai-accent transition">
+                            <Lock className="w-4 h-4 text-chai-muted mr-2" />
                             <input
                                 type="password"
                                 required
-                                minLength={6}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full glass-input px-4 py-2.5 rounded-xl text-sm"
+                                className="bg-transparent focus:outline-none w-full text-chai-text placeholder:text-chai-muted"
                             />
                         </div>
-
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white font-medium py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-600/20 mt-2"
-                        >
-                            {isSubmitting ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <>
-                                    Get Started
-                                    <ArrowRight className="w-4 h-4" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    <div className="mt-6 text-center text-sm text-slate-400">
-                        Already have an account?{' '}
-                        <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-                            Sign in
-                        </Link>
                     </div>
-                </div>
+
+                    <button
+                        type="submit"
+                        className="w-full bg-chai-accent hover:bg-chai-accent-hover text-black font-semibold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition pt-3"
+                    >
+                        Create Account <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                </form>
+
+                <p className="text-center text-xs text-chai-muted">
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-chai-accent hover:underline font-medium">
+                        Log in
+                    </Link>
+                </p>
             </div>
         </div>
     );
