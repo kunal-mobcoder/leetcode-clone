@@ -1,8 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from '../api/axios';
+import api, { setAccessToken } from '../api/axios';
+
+export interface User {
+    id: string;
+    username: string;
+    email: string;
+    roles: string[];
+}
 
 interface AuthContextType {
-    user: any;
+    user: User | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
     signup: (username: string, email: string, password: string) => Promise<void>;
@@ -12,16 +19,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const res = await axios.post('/auth/refresh');
-                setUser(res.data.user || res.data);
-            } catch (err) {
-                // Guest user or expired token — silent catch
+                const res = await api.post('/auth/refresh');
+                if (res.data?.accessToken) {
+                    setAccessToken(res.data.accessToken);
+                }
+                if (res.data?.user) {
+                    setUser(res.data.user);
+                }
+            } catch {
+                // Guest user or no active session — clean fallback
+                setAccessToken(null);
                 setUser(null);
             } finally {
                 setLoading(false);
@@ -31,21 +44,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = async (email: string, password: string) => {
-        const res = await axios.post('/auth/login', { email, password });
-        setUser(res.data.user || res.data);
+        const res = await api.post('/auth/login', { email, password });
+        if (res.data?.accessToken) {
+            setAccessToken(res.data.accessToken);
+        }
+        if (res.data?.user) {
+            setUser(res.data.user);
+        }
     };
 
     const signup = async (username: string, email: string, password: string) => {
-        const res = await axios.post('/auth/register', { username, email, password });
-        setUser(res.data.user || res.data);
+        const res = await api.post('/auth/register', { username, email, password });
+        if (res.data?.accessToken) {
+            setAccessToken(res.data.accessToken);
+        }
+        if (res.data?.user) {
+            setUser(res.data.user);
+        }
     };
 
     const logout = async () => {
         try {
-            await axios.post('/auth/logout');
+            await api.post('/auth/logout');
         } catch (err) {
-            console.error(err);
+            console.error('Logout error:', err);
         } finally {
+            setAccessToken(null);
             setUser(null);
         }
     };

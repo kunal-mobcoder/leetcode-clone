@@ -7,29 +7,64 @@ export interface SubmissionPayload {
     code: string;
 }
 
-export interface SubmissionStatusResponse {
-    _id?: string;
+export interface RunCodePayload {
+    problemId: string;
+    language: string;
+    code: string;
+    customInput?: string;
+}
+
+export interface RunCodeResultItem {
+    input: string;
+    expectedOutput?: string;
+    actualOutput: string;
+    type: 'success' | 'timeout' | 'runtime_error' | 'compile_error' | 'system_error';
+    runtime: number;
+    passed?: boolean;
+}
+
+export interface RunCodeResponse {
+    status: 'success' | 'failed';
+    results: RunCodeResultItem[];
+}
+
+export interface SubmissionItem {
+    _id: string;
     id?: string;
-    status: 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit_exceeded' | 'system_error';
-    runtime?: number;
+    problemId: string;
+    language: string;
+    status: 'pending' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit_exceeded' | 'system_error';
+    runtime: number;
+    memory: number;
+    code: string;
     failedTestCase?: {
         input: string;
         expectedOutput: string;
         actualOutput: string;
     };
-    error?: string;
+    createdAt: string;
 }
 
 export function useSubmitCode() {
     return useMutation({
         mutationFn: async (payload: SubmissionPayload) => {
-            // Makes request to Express backend
             const response = await api.post('/submissions', payload);
-            // Handles both { id: "..." } and { submissionId: "..." } or { data: { _id: "..." } }
             return response.data;
         },
         onError: (error: any) => {
             console.error('Submission error:', error.response?.data || error.message);
+        },
+    });
+}
+
+export function useRunCode() {
+    return useMutation({
+        mutationFn: async (payload: RunCodePayload) => {
+            const response = await api.post<RunCodeResponse>('/submissions/run', payload);
+            return response.data;
+        },
+        onError: (error: any) => {
+            console.error('Run code error:', error.response?.data || error.message);
         },
     });
 }
@@ -39,17 +74,29 @@ export function useSubmissionStatus(submissionId: string | null) {
         queryKey: ['submission', submissionId],
         queryFn: async () => {
             const response = await api.get(`/submissions/${submissionId}`);
-            // Extract submission object if backend wraps it as { submission: { status: '...' } }
             return response.data.submission || response.data;
         },
         enabled: !!submissionId,
         refetchInterval: (query) => {
             const status = query.state.data?.status;
-            // Continue polling while queued, running, or pending
-            if (status && status !== 'queued' && status !== 'running' && status !== 'pending') {
+            if (status && status !== 'pending' && status !== 'running' && status !== 'queued') {
                 return false;
             }
-            return 1000; // Poll every 1 second
+            return 1000;
+        },
+    });
+}
+
+export function useMySubmissions(problemId?: string) {
+    return useQuery({
+        queryKey: ['mySubmissions', problemId],
+        queryFn: async () => {
+            const params = problemId ? { problemId } : {};
+            const response = await api.get('/submissions/my', { params });
+            const data = response.data;
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.submissions)) return data.submissions;
+            return [];
         },
     });
 }

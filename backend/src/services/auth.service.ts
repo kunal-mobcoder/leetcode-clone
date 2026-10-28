@@ -147,6 +147,12 @@ export async function refreshAccessToken(refreshToken: string, context: SessionC
     return {
         accessToken,
         refreshToken: newRefreshToken,
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            roles: user.roles,
+        },
     };
 }
 

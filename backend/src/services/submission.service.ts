@@ -10,6 +10,10 @@ import type {
     CreateSubmissionInput,
 } from "../schemas/submission/createSubmission.schema.js";
 
+import type { RunCodeInput } from "../schemas/submission/runCode.schema.js";
+import { findPublicTestCasesByProblemId } from "../repositories/testCase.repository.js";
+import { executeCode, type SupportedLanguage } from "./codeExecutor.service.js";
+
 import type { SubmissionQuery } from "../schemas/submission/submissionQuery.schema.js";
 
 import { AppError } from "../utils/AppError.js";
@@ -286,5 +290,81 @@ export async function getUserSubmissionsService(
             hasPreviousPage:
                 page > 1,
         },
+    };
+}
+
+function normalizeOutput(output: string): string {
+    const trimmed = output.replace(/\r\n/g, "\n").trim();
+    try {
+        return JSON.stringify(JSON.parse(trimmed));
+    } catch {
+        return trimmed;
+    }
+}
+
+export async function runCodeService(data: RunCodeInput) {
+    if (!mongoose.isValidObjectId(data.problemId)) {
+        throw new AppError("Invalid problem ID", 400);
+    }
+
+    const problem = await problemRepository.findProblemById(data.problemId);
+    if (!problem) {
+        throw new AppError("Problem not found", 404);
+    }
+
+    let testCasesToRun: Array<{ input: string; expectedOutput?: string }> = [];
+
+    if (data.customInput !== undefined && data.customInput.trim().length > 0) {
+        testCasesToRun = [{ input: data.customInput.trim() }];
+    } else {
+        const publicCases = await findPublicTestCasesByProblemId(data.problemId);
+        if (publicCases.length > 0) {
+            testCasesToRun = publicCases.map((tc) => ({
+                input: tc.input,
+                expectedOutput: tc.expectedOutput,
+            }));
+        } else if (problem.examples && problem.examples.length > 0) {
+            testCasesToRun = problem.examples.map((ex) => ({
+                input: ex.input,
+                expectedOutput: ex.output,
+            }));
+        } else {
+            testCasesToRun = [{ input: "" }];
+        }
+    }
+
+    const results = [];
+    let allPassed = true;
+
+    for (const tc of testCasesToRun) {
+        const execResult = await executeCode({
+            code: data.code,
+            language: data.language as SupportedLanguage,
+            input: tc.input,
+            timeoutMs: 3000,
+            entryFunctionName: problem.entryFunctionName,
+        });
+
+        const normalizedActual = normalizeOutput(execResult.output);
+        const normalizedExpected = tc.expectedOutput ? normalizeOutput(tc.expectedOutput) : undefined;
+        const passed = normalizedExpected !== undefined ? normalizedActual === normalizedExpected : undefined;
+
+        if (passed === false || execResult.type !== "success") {
+            allPassed = false;
+        }
+
+        results.push({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+            actualOutput: normalizedActual,
+            type: execResult.type,
+            runtime: execResult.runtime,
+            passed,
+        });
+    }
+
+    return {
+        status: allPassed ? "success" : "failed",
+        results,
     };
 }

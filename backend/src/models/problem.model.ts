@@ -22,6 +22,13 @@ export interface Problem {
     constraints: string[];
     examples: ProblemExample[];
     tags: string[];
+    starterCode?: {
+        javascript?: string;
+        python?: string;
+        java?: string;
+        cpp?: string;
+    };
+    entryFunctionName?: string;
     status: "draft" | "published" | "archived";
     createdBy: mongoose.Types.ObjectId;
 }
@@ -93,6 +100,17 @@ const ProblemSchema = new mongoose.Schema<Problem>(
             type: [String],
             default: [],
             index: true,
+        },
+
+        starterCode: {
+            type: Map,
+            of: String,
+            default: {},
+        },
+
+        entryFunctionName: {
+            type: String,
+            trim: true,
         },
 
         status: {

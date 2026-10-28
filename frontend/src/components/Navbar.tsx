@@ -1,66 +1,60 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sun } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Code2, LogOut, User as UserIcon } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
     const { user, logout } = useAuth();
 
     return (
-        <header className="w-full bg-chai-bg border-b border-chai-border text-xs text-chai-text">
-            {/* Top Banner Bar */}
-            <div className="flex items-center justify-between px-6 py-2 bg-[#120e0a] border-b border-[#26180c]">
-                <div className="flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-chai-accent animate-pulse" />
-                    <span className="font-semibold text-chai-accent">Learning September</span>
-                    <span className="text-chai-muted hidden sm:inline">• Everything is free for everyone until 30 Sept.</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="bg-chai-accent hover:bg-chai-accent-hover text-black font-semibold px-3 py-1 rounded-md text-xs transition">
-                        Start free
-                    </button>
-                    <span className="text-chai-muted cursor-pointer hover:text-chai-text">not now</span>
-                </div>
-            </div>
-
-            {/* Main Nav Header */}
-            <div className="flex items-center justify-between px-6 py-3">
+        <header className="w-full bg-chai-bg border-b border-chai-border text-xs text-chai-text sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
                 <div className="flex items-center gap-8">
-                    <Link to="/" className="flex items-center gap-2 font-bold text-base tracking-tight">
-                        <span className="text-xl">☕</span>
-                        <span>Chai <span className="text-chai-accent">Visual</span></span>
+                    <Link to="/problems" className="flex items-center gap-2 font-bold text-base tracking-tight">
+                        <Code2 className="w-5 h-5 text-chai-accent" />
+                        <span>Leet<span className="text-chai-accent">Clone</span></span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-6 text-chai-muted font-medium">
-                        <Link to="/problems" className="hover:text-chai-text transition">Practice</Link>
-                        <a href="#" className="hover:text-chai-text transition">Learn ▾</a>
-                        <a href="#" className="hover:text-chai-text transition">Roadmap</a>
+                    <nav className="flex items-center gap-6 text-chai-muted font-medium">
+                        <Link to="/problems" className="hover:text-chai-text transition">
+                            Problems
+                        </Link>
                     </nav>
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <button className="text-chai-muted hover:text-chai-text p-1.5 rounded-lg border border-chai-border">
-                        <Sun className="w-4 h-4" />
-                    </button>
                     {user ? (
-                        <button
-                            onClick={logout}
-                            className="text-chai-muted hover:text-chai-text font-medium"
-                        >
-                            Log out
-                        </button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-chai-muted bg-chai-card px-3 py-1.5 rounded-lg border border-chai-border">
+                                <UserIcon className="w-3.5 h-3.5 text-chai-accent" />
+                                <span className="text-chai-text font-medium">{user.username}</span>
+                                {user.roles?.includes('admin') && (
+                                    <span className="bg-amber-950/40 text-amber-400 text-[10px] px-1.5 py-0.2 rounded border border-amber-800 font-semibold uppercase">
+                                        Admin
+                                    </span>
+                                )}
+                            </div>
+                            <button
+                                onClick={logout}
+                                className="flex items-center gap-1.5 text-chai-muted hover:text-red-400 transition font-medium"
+                                title="Sign out"
+                            >
+                                <LogOut className="w-3.5 h-3.5" />
+                                <span>Logout</span>
+                            </button>
+                        </div>
                     ) : (
-                        <>
-                            <Link to="/login" className="text-chai-muted hover:text-chai-text font-medium">
+                        <div className="flex items-center gap-3">
+                            <Link to="/login" className="text-chai-muted hover:text-chai-text font-medium px-3 py-1.5">
                                 Log in
                             </Link>
                             <Link
                                 to="/signup"
-                                className="bg-white text-black font-medium px-4 py-1.5 rounded-lg hover:bg-slate-200 transition"
+                                className="bg-chai-accent hover:bg-chai-accent-hover text-black font-semibold px-4 py-1.5 rounded-lg transition"
                             >
-                                Get started
+                                Sign up
                             </Link>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>

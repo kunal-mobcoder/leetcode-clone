@@ -42,6 +42,15 @@ export const createProblemSchema = z.object({
             })
         )
         .default([]),
+
+    starterCode: z
+        .record(z.string(), z.string())
+        .optional()
+        .default({}),
+
+    entryFunctionName: z
+        .string()
+        .optional(),
 });
 
 export type CreateProblemInput = z.infer<typeof createProblemSchema>;

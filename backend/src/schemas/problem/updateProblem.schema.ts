@@ -75,6 +75,14 @@ export const updateProblemSchema = z.object({
             })
         )
         .optional(),
+
+    starterCode: z
+        .record(z.string(), z.string())
+        .optional(),
+
+    entryFunctionName: z
+        .string()
+        .optional(),
 })
     .strict();
 

@@ -33,10 +33,11 @@ router.post("/refresh", refreshTokenController);
 
 
 /**
- * @route POST /api/auth/register
+ * @route POST /api/auth/logout
  * @description Logout a user
  * @access Public
  */
+router.post("/logout", logoutUserController);
 router.get("/logout", logoutUserController);
 
 

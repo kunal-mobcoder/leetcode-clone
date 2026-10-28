@@ -13,6 +13,10 @@ import {
 } from "../schemas/submission/createSubmission.schema.js";
 
 import {
+    runCodeSchema,
+} from "../schemas/submission/runCode.schema.js";
+
+import {
     submissionQuerySchema,
 } from "../schemas/submission/submissionQuery.schema.js";
 
@@ -20,6 +24,7 @@ import {
     createSubmissionController,
     getSubmissionByIdController,
     getMySubmissionsController,
+    runCodeController,
 } from "../controllers/submission.controller.js";
 
 
@@ -50,6 +55,18 @@ router.post(
     authenticate,
     validateBody(createSubmissionSchema),
     createSubmissionController
+);
+
+
+/**
+ * @route POST /api/submissions/run
+ * @description Test code execution synchronously against sample or custom test cases
+ * @access Public / Authenticated
+ */
+router.post(
+    "/run",
+    validateBody(runCodeSchema),
+    runCodeController
 );
 
 

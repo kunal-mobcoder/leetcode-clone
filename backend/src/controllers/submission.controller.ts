@@ -6,12 +6,14 @@ import type {
 
 
 import type { SubmissionQuery } from "../schemas/submission/submissionQuery.schema.js";
+import type { RunCodeInput } from "../schemas/submission/runCode.schema.js";
 
 import {
     createSubmissionService,
     getSubmissionByIdService,
     getUserSubmissionsService,
-    getMySubmissionsService
+    getMySubmissionsService,
+    runCodeService,
 } from "../services/submission.service.js";
 
 /**
@@ -129,26 +131,20 @@ export async function getMySubmissionsController(
     res: Response,
     next: NextFunction
 ) {
-
     try {
+        const query = (req.validatedQuery || req.query) as SubmissionQuery;
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 20;
 
-        const query =
-            req.query as unknown as SubmissionQuery;
-
-
-        const result =
-            await getMySubmissionsService(
-                req.user!.userId,
-                query
-            );
-
-
-        return res.status(200).json(
-            result
+        const result = await getUserSubmissionsService(
+            req.user!.userId,
+            page,
+            limit,
+            query.problemId
         );
 
+        return res.status(200).json(result);
     } catch (error) {
-
         next(error);
     }
 }
@@ -188,6 +184,24 @@ export async function getUserSubmissionsController(
                 problemId
             );
 
+        return res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Run code against sample or custom test cases (Interactive Test Run)
+ *
+ * POST /api/submissions/run
+ */
+export async function runCodeController(
+    req: Request<{}, {}, RunCodeInput>,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const result = await runCodeService(req.body);
         return res.status(200).json(result);
     } catch (error) {
         next(error);

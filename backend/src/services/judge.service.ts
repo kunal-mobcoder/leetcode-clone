@@ -7,7 +7,12 @@ import type { SubmissionLanguage } from "../models/submission.model.js";
 import { AppError } from "../utils/AppError.js";
 
 function normalizeOutput(output: string): string {
-    return output.replace(/\r\n/g, "\n").trim();
+    const trimmed = output.replace(/\r\n/g, "\n").trim();
+    try {
+        return JSON.stringify(JSON.parse(trimmed));
+    } catch {
+        return trimmed;
+    }
 }
 
 export async function judgeSubmission(submissionId: string) {
@@ -53,6 +58,7 @@ export async function judgeSubmission(submissionId: string) {
             language: submission.language as SubmissionLanguage,
             input: testCase.input,
             timeoutMs: 2000,
+            entryFunctionName: problem.entryFunctionName,
         });
 
         console.timeEnd(`[TEST_CASE] ${index}`);
