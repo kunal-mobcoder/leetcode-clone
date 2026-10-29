@@ -15,7 +15,7 @@ export const ProblemList: React.FC = () => {
         search: search.trim() ? search.trim() : undefined,
     });
 
-    const { data: mySubmissions } = useMySubmissions();
+    const { data: mySubmissions } = useMySubmissions(undefined, !!user);
 
     // Map of solved problem IDs
     const solvedProblemIds = useMemo(() => {

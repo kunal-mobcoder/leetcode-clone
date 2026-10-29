@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import { useProblemBySlug, usePublicTestCases } from '../hooks/useProblems';
 import {
     useSubmitCode,
@@ -31,11 +32,13 @@ import {
 
 export const ProblemWorkspace: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { user } = useAuth();
 
     const { data: problemData, isLoading: isLoadingProblem, error: problemError } = useProblemBySlug(slug);
     const { data: publicTestCases } = usePublicTestCases(problemData?._id);
-    const { data: pastSubmissions } = useMySubmissions(problemData?._id);
+    const { data: pastSubmissions } = useMySubmissions(problemData?._id, !!user && !!problemData?._id);
 
     const [language, setLanguage] = useState<'javascript' | 'python'>('javascript');
     const [code, setCode] = useState('');
@@ -44,6 +47,7 @@ export const ProblemWorkspace: React.FC = () => {
     const [activeConsoleTab, setActiveConsoleTab] = useState<'testcase' | 'testresult' | 'submitresult'>('testcase');
     const [customInput, setCustomInput] = useState('');
     const [runResult, setRunResult] = useState<RunCodeResponse | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [viewingSubmission, setViewingSubmission] = useState<SubmissionItem | null>(null);
     const [copied, setCopied] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
@@ -122,16 +126,39 @@ export const ProblemWorkspace: React.FC = () => {
                 customInput: customInput.trim() ? customInput : undefined,
             });
             setRunResult(res);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Run code error:', err);
+            const msg =
+                err.response?.data?.error ||
+                err.response?.data?.message ||
+                err.message ||
+                'Error executing code';
+            setRunResult({
+                status: 'failed',
+                results: [
+                    {
+                        input: customInput || 'Sample test cases',
+                        actualOutput: msg,
+                        type: 'system_error',
+                        runtime: 0,
+                        passed: false,
+                    },
+                ],
+            });
         }
     };
 
     // Handle "Submit"
     const handleSubmit = async () => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+
         if (!code.trim() || !problemData?._id || submitMutation.isPending) return;
 
         try {
+            setSubmitError(null);
             setActiveConsoleTab('submitresult');
             const res = await submitMutation.mutateAsync({
                 problemId: problemData._id,
@@ -149,8 +176,14 @@ export const ProblemWorkspace: React.FC = () => {
             if (newSubmissionId) {
                 setActiveSubmissionId(newSubmissionId);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Submission failed:', err);
+            const msg =
+                err.response?.data?.error ||
+                err.response?.data?.message ||
+                err.message ||
+                'Submission failed';
+            setSubmitError(msg);
         }
     };
 
@@ -528,6 +561,7 @@ export const ProblemWorkspace: React.FC = () => {
                             runResult={runResult}
                             isRunningCode={runMutation.isPending}
                             isSubmitting={isPolling || submitMutation.isPending}
+                            submitError={submitError}
                             activeTab={activeConsoleTab}
                             setActiveTab={setActiveConsoleTab}
                             customInput={customInput}

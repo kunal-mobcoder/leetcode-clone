@@ -87,7 +87,7 @@ export function useSubmissionStatus(submissionId: string | null) {
     });
 }
 
-export function useMySubmissions(problemId?: string) {
+export function useMySubmissions(problemId?: string, enabled: boolean = true) {
     return useQuery({
         queryKey: ['mySubmissions', problemId],
         queryFn: async () => {
@@ -98,5 +98,6 @@ export function useMySubmissions(problemId?: string) {
             if (Array.isArray(data?.submissions)) return data.submissions;
             return [];
         },
+        enabled,
     });
 }

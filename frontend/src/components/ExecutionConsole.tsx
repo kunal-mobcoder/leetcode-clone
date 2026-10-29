@@ -7,6 +7,7 @@ interface ExecutionConsoleProps {
     runResult: RunCodeResponse | null;
     isRunningCode: boolean;
     isSubmitting: boolean;
+    submitError?: string | null;
     activeTab: 'testcase' | 'testresult' | 'submitresult';
     setActiveTab: (tab: 'testcase' | 'testresult' | 'submitresult') => void;
     customInput: string;
@@ -19,6 +20,7 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
     runResult,
     isRunningCode,
     isSubmitting,
+    submitError,
     activeTab,
     setActiveTab,
     customInput,
@@ -216,7 +218,12 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
                 {/* 3. SUBMIT VERDICT TAB */}
                 {activeTab === 'submitresult' && (
                     <div className="space-y-3">
-                        {!submission ? (
+                        {submitError ? (
+                            <div className="p-3 bg-red-950/20 border border-red-900/60 rounded-lg text-red-400 text-xs flex items-center gap-2">
+                                <XCircle className="w-4 h-4 flex-shrink-0" />
+                                <span>{submitError}</span>
+                            </div>
+                        ) : !submission ? (
                             <div className="text-chai-muted text-xs py-4 text-center">
                                 Click <strong className="text-chai-text">Submit</strong> to evaluate your solution.
                             </div>

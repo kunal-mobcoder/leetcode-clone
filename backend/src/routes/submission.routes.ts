@@ -27,6 +27,8 @@ import {
     runCodeController,
 } from "../controllers/submission.controller.js";
 
+import { codeExecutionLimiter } from "../middleware/rateLimit.middleware.js";
+
 
 const router = Router();
 
@@ -45,13 +47,13 @@ const router = Router();
 
 /**
  * @route POST /api/submissions
- * @description Create a new code submission
+ * @description Create a new code submission (judge via BullMQ)
  * @access Authenticated users
- *
- * The user ID comes from the authenticated JWT.
+ * @rateLimit 15 req / min / IP
  */
 router.post(
     "/",
+    codeExecutionLimiter,
     authenticate,
     validateBody(createSubmissionSchema),
     createSubmissionController
@@ -62,9 +64,11 @@ router.post(
  * @route POST /api/submissions/run
  * @description Test code execution synchronously against sample or custom test cases
  * @access Public / Authenticated
+ * @rateLimit 15 req / min / IP
  */
 router.post(
     "/run",
+    codeExecutionLimiter,
     validateBody(runCodeSchema),
     runCodeController
 );
@@ -78,6 +82,7 @@ router.post(
  * Supports pagination:
  *
  * ?page=1&limit=20
+ * ?page=1&limit=20&problemId=<id>
  */
 router.get(
     "/my",

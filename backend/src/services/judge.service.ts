@@ -27,7 +27,7 @@ export async function judgeSubmission(submissionId: string) {
     if (!submission) {
         throw new AppError("Submission not found", 404);
     }
-    if (submission.status !== "running") {
+    if (submission.status !== "running" && submission.status !== "pending") {
         throw new AppError(`Submission cannot be judged from status: ${submission.status}`, 400);
     }
 
