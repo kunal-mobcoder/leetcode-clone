@@ -22,6 +22,7 @@ export interface Problem {
     constraints: string[];
     examples: ProblemExample[];
     tags: string[];
+    hints?: string[];
     starterCode?: {
         javascript?: string;
         python?: string;
@@ -100,6 +101,11 @@ const ProblemSchema = new mongoose.Schema<Problem>(
             type: [String],
             default: [],
             index: true,
+        },
+
+        hints: {
+            type: [String],
+            default: [],
         },
 
         starterCode: {

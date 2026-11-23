@@ -34,6 +34,10 @@ async function seed() {
             description: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
             difficulty: "easy" as const,
             tags: ["array", "hash-table"],
+            hints: [
+                "A brute force approach would search all pairs, which takes O(n^2). Can you do it in O(n)?",
+                "Can a hash map help you store values you've seen and check for (target - num) in O(1) time?",
+            ],
             constraints: [
                 "2 <= nums.length <= 10^4",
                 "-10^9 <= nums[i] <= 10^9",
@@ -95,6 +99,10 @@ function twoSum(nums, target) {
             description: "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.\n\nAlphanumeric characters include letters and numbers.\n\nGiven a string `s`, return `true` if it is a palindrome, or `false` otherwise.",
             difficulty: "easy" as const,
             tags: ["two-pointers", "string"],
+            hints: [
+                "Consider using two pointers: one at the beginning and one at the end.",
+                "Skip non-alphanumeric characters and compare the remaining characters in lowercase.",
+            ],
             constraints: [
                 "1 <= s.length <= 2 * 10^5",
                 "s consists only of printable ASCII characters.",
@@ -141,6 +149,10 @@ function isPalindrome(s) {
             description: "Given a string `s` containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\nAn input string is valid if:\n1. Open brackets must be closed by the same type of brackets.\n2. Open brackets must be closed in the correct order.\n3. Every close bracket has a corresponding open bracket of the same type.",
             difficulty: "easy" as const,
             tags: ["string", "stack"],
+            hints: [
+                "An opening bracket must be closed by the same type of bracket in the correct order.",
+                "What data structure operates in Last-In-First-Out (LIFO) order to match the most recent opening bracket?",
+            ],
             constraints: [
                 "1 <= s.length <= 10^4",
                 "s consists of parentheses only '()[]{}'.",
@@ -196,6 +208,10 @@ function isValid(s) {
             description: "Given a signed 32-bit integer `x`, return `x` with its digits reversed. If reversing `x` causes the value to go outside the signed 32-bit integer range `[-2^31, 2^31 - 1]`, then return 0.\n\nAssume the environment does not allow you to store 64-bit integers.",
             difficulty: "medium" as const,
             tags: ["math"],
+            hints: [
+                "Think about how you can pop the last digit off using modulo (% 10) and push it onto the reversed number (* 10 + digit).",
+                "Be careful with 32-bit signed integer overflow (between -2^31 and 2^31 - 1).",
+            ],
             constraints: [
                 "-2^31 <= x <= 2^31 - 1",
             ],

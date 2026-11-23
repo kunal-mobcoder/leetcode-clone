@@ -15,6 +15,7 @@ export interface Problem {
     tags: string[];
     constraints?: string[];
     examples?: ProblemExample[];
+    hints?: string[];
     description: string;
     starterCode?: Record<string, string>;
     defaultCode?: Record<string, string>;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Editor, { type OnMount } from '@monaco-editor/react';
+import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useProblemBySlug, usePublicTestCases } from '../hooks/useProblems';
@@ -28,6 +29,9 @@ import {
     Check,
     X,
     CheckCircle,
+    Lightbulb,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react';
 
 export const ProblemWorkspace: React.FC = () => {
@@ -49,8 +53,13 @@ export const ProblemWorkspace: React.FC = () => {
     const [runResult, setRunResult] = useState<RunCodeResponse | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [viewingSubmission, setViewingSubmission] = useState<SubmissionItem | null>(null);
+    const [openHints, setOpenHints] = useState<Record<number, boolean>>({});
     const [copied, setCopied] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+
+    const toggleHint = (idx: number) => {
+        setOpenHints((prev) => ({ ...prev, [idx]: !prev[idx] }));
+    };
 
     const submitMutation = useSubmitCode();
     const runMutation = useRunCode();
@@ -317,43 +326,44 @@ export const ProblemWorkspace: React.FC = () => {
                 </div>
             </div>
 
-            {/* Main Split Grid */}
-            <div className="flex-1 grid grid-cols-12 overflow-hidden">
-                {/* Left Panel: Description & Submissions */}
-                <div className="col-span-5 border-r border-chai-border flex flex-col bg-chai-bg overflow-hidden">
-                    {/* Left Panel Tab Headers */}
-                    <div className="flex items-center border-b border-chai-border bg-chai-card px-4 py-2 gap-4 text-xs">
-                        <button
-                            onClick={() => setActiveLeftTab('description')}
-                            className={`flex items-center gap-1.5 transition ${
-                                activeLeftTab === 'description'
-                                    ? 'text-chai-accent font-semibold'
-                                    : 'text-chai-muted hover:text-chai-text'
-                            }`}
-                        >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>Description</span>
-                        </button>
-                        <button
-                            onClick={() => setActiveLeftTab('submissions')}
-                            className={`flex items-center gap-1.5 transition ${
-                                activeLeftTab === 'submissions'
-                                    ? 'text-chai-accent font-semibold'
-                                    : 'text-chai-muted hover:text-chai-text'
-                            }`}
-                        >
-                            <History className="w-3.5 h-3.5" />
-                            <span>Submissions</span>
-                            {pastSubmissions && pastSubmissions.length > 0 && (
-                                <span className="bg-chai-border text-chai-text text-[10px] px-1.5 py-0.2 rounded-full font-mono">
-                                    {pastSubmissions.length}
-                                </span>
-                            )}
-                        </button>
-                    </div>
+            {/* Main Resizable Split Workspace */}
+            <div className="flex-1 overflow-hidden">
+                <Group orientation="horizontal">
+                    {/* Left Panel: Description & Submissions */}
+                    <Panel defaultSize={42} minSize={25} className="flex flex-col bg-chai-bg overflow-hidden border-r border-chai-border">
+                        {/* Left Panel Tab Headers */}
+                        <div className="flex items-center border-b border-chai-border bg-chai-card px-4 py-2 gap-4 text-xs">
+                            <button
+                                onClick={() => setActiveLeftTab('description')}
+                                className={`flex items-center gap-1.5 transition ${
+                                    activeLeftTab === 'description'
+                                        ? 'text-chai-accent font-semibold'
+                                        : 'text-chai-muted hover:text-chai-text'
+                                }`}
+                            >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Description</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveLeftTab('submissions')}
+                                className={`flex items-center gap-1.5 transition ${
+                                    activeLeftTab === 'submissions'
+                                        ? 'text-chai-accent font-semibold'
+                                        : 'text-chai-muted hover:text-chai-text'
+                                }`}
+                            >
+                                <History className="w-3.5 h-3.5" />
+                                <span>Submissions</span>
+                                {pastSubmissions && pastSubmissions.length > 0 && (
+                                    <span className="bg-chai-border text-chai-text text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+                                        {pastSubmissions.length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
 
-                    {/* Left Panel Content */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+                        {/* Left Panel Content */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
                         {activeLeftTab === 'description' ? (
                             <div className="space-y-5">
                                 {/* Title and Badge */}
@@ -446,6 +456,46 @@ export const ProblemWorkspace: React.FC = () => {
                                         </ul>
                                     </div>
                                 )}
+
+                                {/* Hints Section */}
+                                {problemData.hints && problemData.hints.length > 0 && (
+                                    <div className="space-y-2 pt-2 border-t border-chai-border">
+                                        <div className="flex items-center gap-1.5 text-chai-accent font-bold uppercase tracking-wider text-[11px]">
+                                            <Lightbulb className="w-3.5 h-3.5" />
+                                            <span>Hints</span>
+                                        </div>
+                                        <div className="space-y-2 pt-1">
+                                            {problemData.hints.map((hint: string, idx: number) => {
+                                                const isOpen = !!openHints[idx];
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className="border border-chai-border rounded-lg overflow-hidden bg-chai-card/40 transition"
+                                                    >
+                                                        <button
+                                                            onClick={() => toggleHint(idx)}
+                                                            className="w-full px-3 py-2 flex items-center justify-between text-left font-mono text-[11px] text-chai-muted hover:text-chai-text transition"
+                                                        >
+                                                            <span className="font-semibold text-chai-text">
+                                                                Hint {idx + 1}
+                                                            </span>
+                                                            {isOpen ? (
+                                                                <ChevronUp className="w-3.5 h-3.5 text-chai-muted" />
+                                                            ) : (
+                                                                <ChevronDown className="w-3.5 h-3.5 text-chai-muted" />
+                                                            )}
+                                                        </button>
+                                                        {isOpen && (
+                                                            <div className="px-3 pb-3 pt-1 text-xs text-chai-text/90 leading-relaxed font-sans border-t border-chai-border/40 bg-chai-bg/50">
+                                                                {hint}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             /* Submissions History Tab */
@@ -508,11 +558,19 @@ export const ProblemWorkspace: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </div>
+                </Panel>
+
+                {/* Draggable Vertical Divider Handle */}
+                <Separator className="w-1.5 bg-chai-bg hover:bg-chai-accent/40 active:bg-chai-accent transition-colors cursor-col-resize relative group flex items-center justify-center">
+                    <div className="w-0.5 h-6 bg-chai-border group-hover:bg-chai-accent transition-colors rounded-full" />
+                </Separator>
 
                 {/* Right Panel: Monaco Code Editor + Interactive Execution Console */}
-                <div className="col-span-7 flex flex-col bg-[#1e1e1e] overflow-hidden">
-                    {/* Monaco Editor Header */}
+                <Panel defaultSize={58} minSize={30} className="flex flex-col bg-[#1e1e1e] overflow-hidden">
+                    <Group orientation="vertical">
+                        {/* Editor Sub-panel */}
+                        <Panel defaultSize={62} minSize={25} className="flex flex-col overflow-hidden">
+                            {/* Monaco Editor Header */}
                     <div className="bg-chai-bg border-b border-chai-border px-4 py-2 flex items-center justify-between text-xs text-chai-muted">
                         <div className="flex items-center gap-2">
                             <Code2 className="w-3.5 h-3.5 text-chai-accent" />
@@ -553,24 +611,32 @@ export const ProblemWorkspace: React.FC = () => {
                             }}
                         />
                     </div>
+                </Panel>
 
-                    {/* Interactive Execution Console */}
-                    <div className="h-64 border-t border-chai-border bg-chai-card flex flex-col overflow-hidden">
-                        <ExecutionConsole
-                            submission={submissionStatus}
-                            runResult={runResult}
-                            isRunningCode={runMutation.isPending}
-                            isSubmitting={isPolling || submitMutation.isPending}
-                            submitError={submitError}
-                            activeTab={activeConsoleTab}
-                            setActiveTab={setActiveConsoleTab}
-                            customInput={customInput}
-                            setCustomInput={setCustomInput}
-                            publicTestCases={publicTestCases}
-                        />
-                    </div>
-                </div>
-            </div>
+                {/* Draggable Horizontal Divider Handle */}
+                <Separator className="h-1.5 bg-chai-bg hover:bg-chai-accent/40 active:bg-chai-accent transition-colors cursor-row-resize relative group flex items-center justify-center">
+                    <div className="h-0.5 w-8 bg-chai-border group-hover:bg-chai-accent transition-colors rounded-full" />
+                </Separator>
+
+                {/* Console Sub-panel */}
+                <Panel defaultSize={38} minSize={15} className="bg-chai-card flex flex-col overflow-hidden">
+                    <ExecutionConsole
+                        submission={submissionStatus}
+                        runResult={runResult}
+                        isRunningCode={runMutation.isPending}
+                        isSubmitting={isPolling || submitMutation.isPending}
+                        submitError={submitError}
+                        activeTab={activeConsoleTab}
+                        setActiveTab={setActiveConsoleTab}
+                        customInput={customInput}
+                        setCustomInput={setCustomInput}
+                        publicTestCases={publicTestCases}
+                    />
+                </Panel>
+            </Group>
+        </Panel>
+    </Group>
+</div>
 
             {/* Submission Code Viewer Modal */}
             {viewingSubmission && (

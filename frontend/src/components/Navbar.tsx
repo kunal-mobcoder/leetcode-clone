@@ -19,21 +19,30 @@ export const Navbar: React.FC = () => {
                         <Link to="/problems" className="hover:text-chai-text transition">
                             Problems
                         </Link>
+                        {user && (
+                            <Link to="/profile" className="hover:text-chai-text transition">
+                                Profile
+                            </Link>
+                        )}
                     </nav>
                 </div>
 
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-chai-muted bg-chai-card px-3 py-1.5 rounded-lg border border-chai-border">
-                                <UserIcon className="w-3.5 h-3.5 text-chai-accent" />
+                            <Link
+                                to="/profile"
+                                className="flex items-center gap-2 text-chai-muted bg-chai-card hover:bg-chai-card-hover px-3 py-1.5 rounded-lg border border-chai-border transition group"
+                                title="View Profile"
+                            >
+                                <UserIcon className="w-3.5 h-3.5 text-chai-accent group-hover:scale-110 transition-transform" />
                                 <span className="text-chai-text font-medium">{user.username}</span>
                                 {user.roles?.includes('admin') && (
                                     <span className="bg-amber-950/40 text-amber-400 text-[10px] px-1.5 py-0.2 rounded border border-amber-800 font-semibold uppercase">
                                         Admin
                                     </span>
                                 )}
-                            </div>
+                            </Link>
                             <button
                                 onClick={logout}
                                 className="flex items-center gap-1.5 text-chai-muted hover:text-red-400 transition font-medium"
