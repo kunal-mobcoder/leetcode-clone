@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
-import type { Problem } from './useProblems';
+import type { Problem, ProblemEditorial } from './useProblems';
 
 export interface AdminProblemItem extends Problem {
     status: 'draft' | 'published' | 'archived';
@@ -25,6 +25,7 @@ export interface CreateProblemPayload {
     tags?: string[];
     constraints?: string[];
     hints?: string[];
+    editorial?: ProblemEditorial;
     examples?: Array<{
         input: string;
         output: string;

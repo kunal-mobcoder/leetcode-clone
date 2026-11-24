@@ -85,6 +85,34 @@ function twoSum(nums, target) {
             },
             entryFunctionName: "twoSum",
             status: "published" as const,
+            editorial: {
+                intuition: "Instead of iterating through the array with a nested loop comparing each pair (which costs O(n^2)), we can keep track of elements we have already inspected using a hash map.",
+                approach: "As we iterate through `nums` with index `i`, we compute the required `complement = target - nums[i]`. If `complement` exists in our hash map, we have found our answer pair: `[map.get(complement), i]`. Otherwise, we record the current number and its index in the hash map and proceed.",
+                timeComplexity: "O(n)",
+                spaceComplexity: "O(n)",
+                solutionCode: {
+                    javascript: `function twoSum(nums, target) {
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        if (map.has(complement)) {
+            return [map.get(complement), i];
+        }
+        map.set(nums[i], i);
+    }
+    return [];
+}`,
+                    python: `class Solution:
+    def twoSum(self, nums: list[int], target: int) -> list[int]:
+        seen = {}
+        for i, num in enumerate(nums):
+            complement = target - num
+            if complement in seen:
+                return [seen[complement], i]
+            seen[num] = i
+        return []`,
+                },
+            },
             testCases: [
                 { input: "[2,7,11,15]\n9", expectedOutput: "[0,1]", isHidden: false },
                 { input: "[3,2,4]\n6", expectedOutput: "[1,2]", isHidden: false },
@@ -135,6 +163,42 @@ function isPalindrome(s) {
             },
             entryFunctionName: "isPalindrome",
             status: "published" as const,
+            editorial: {
+                intuition: "A palindrome reads the same backwards as forwards. By maintaining two pointers at opposite ends of the string, we can verify character equality while skipping non-alphanumeric symbols.",
+                approach: "Initialize `left = 0` and `right = s.length - 1`. While `left < right`, increment `left` if `s[left]` is not alphanumeric, decrement `right` if `s[right]` is not alphanumeric. When both point to valid characters, compare their lowercase forms. If they differ, return false. If the loop finishes, return true.",
+                timeComplexity: "O(n)",
+                spaceComplexity: "O(1)",
+                solutionCode: {
+                    javascript: `function isPalindrome(s) {
+    let left = 0, right = s.length - 1;
+    const isAlphaNum = (c) => /[a-z0-9]/i.test(c);
+
+    while (left < right) {
+        while (left < right && !isAlphaNum(s[left])) left++;
+        while (left < right && !isAlphaNum(s[right])) right--;
+        if (s[left].toLowerCase() !== s[right].toLowerCase()) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
+}`,
+                    python: `class Solution:
+    def isPalindrome(self, s: str) -> bool:
+        left, right = 0, len(s) - 1
+        while left < right:
+            while left < right and not s[left].isalnum():
+                left += 1
+            while left < right and not s[right].isalnum():
+                right -= 1
+            if s[left].lower() != s[right].lower():
+                return False
+            left += 1
+            right -= 1
+        return True`,
+                },
+            },
             testCases: [
                 { input: '"A man, a plan, a canal: Panama"', expectedOutput: "true", isHidden: false },
                 { input: '"race a car"', expectedOutput: "false", isHidden: false },
@@ -194,6 +258,38 @@ function isValid(s) {
             },
             entryFunctionName: "isValid",
             status: "published" as const,
+            editorial: {
+                intuition: "Because brackets must close in reverse of the order they opened, a Last-In-First-Out (LIFO) stack is the optimal data structure.",
+                approach: "Iterate through each character in the string. If it is an opening bracket ('(', '{', '['), push it onto the stack. If it is a closing bracket, check whether the stack is non-empty and whether the popped opening bracket matches the current closing bracket. At the end, the stack must be empty for the string to be valid.",
+                timeComplexity: "O(n)",
+                spaceComplexity: "O(n)",
+                solutionCode: {
+                    javascript: `function isValid(s) {
+    const stack = [];
+    const map = { ')': '(', '}': '{', ']': '[' };
+    for (const char of s) {
+        if (char === '(' || char === '{' || char === '[') {
+            stack.push(char);
+        } else if (map[char]) {
+            if (stack.pop() !== map[char]) return false;
+        }
+    }
+    return stack.length === 0;
+}`,
+                    python: `class Solution:
+    def isValid(self, s: str) -> bool:
+        stack = []
+        mapping = {")": "(", "}": "{", "]": "["}
+        for char in s:
+            if char in mapping:
+                top = stack.pop() if stack else '#'
+                if mapping[char] != top:
+                    return False
+            else:
+                stack.append(char)
+        return not stack`,
+                },
+            },
             testCases: [
                 { input: '"()"', expectedOutput: "true", isHidden: false },
                 { input: '"()[]{}"', expectedOutput: "true", isHidden: false },
@@ -243,6 +339,40 @@ function reverse(x) {
             },
             entryFunctionName: "reverse",
             status: "published" as const,
+            editorial: {
+                intuition: "We can extract digits from right to left using the modulo operator (% 10) and accumulate them into a reversed number (* 10 + digit).",
+                approach: "Remember the sign of the integer and work with its absolute value. In each step, take `pop = x % 10`, then `x = Math.floor(x / 10)`, and append `rev = rev * 10 + pop`. Finally, verify that the result fits within the 32-bit signed integer boundary [-2^31, 2^31 - 1]; if not, return 0.",
+                timeComplexity: "O(log10(n))",
+                spaceComplexity: "O(1)",
+                solutionCode: {
+                    javascript: `function reverse(x) {
+    const sign = x < 0 ? -1 : 1;
+    let n = Math.abs(x);
+    let rev = 0;
+    while (n > 0) {
+        rev = rev * 10 + (n % 10);
+        n = Math.floor(n / 10);
+    }
+    rev *= sign;
+    if (rev < -Math.pow(2, 31) || rev > Math.pow(2, 31) - 1) {
+        return 0;
+    }
+    return rev;
+}`,
+                    python: `class Solution:
+    def reverse(self, x: int) -> int:
+        sign = -1 if x < 0 else 1
+        n = abs(x)
+        rev = 0
+        while n > 0:
+            rev = rev * 10 + (n % 10)
+            n //= 10
+        rev *= sign
+        if rev < -2**31 or rev > 2**31 - 1:
+            return 0
+        return rev`,
+                },
+            },
             testCases: [
                 { input: "123", expectedOutput: "321", isHidden: false },
                 { input: "-123", expectedOutput: "-321", isHidden: false },

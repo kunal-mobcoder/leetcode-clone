@@ -87,6 +87,16 @@ export const updateProblemSchema = z.object({
         .record(z.string(), z.string())
         .optional(),
 
+    editorial: z
+        .object({
+            intuition: z.string().optional(),
+            approach: z.string().optional(),
+            timeComplexity: z.string().optional(),
+            spaceComplexity: z.string().optional(),
+            solutionCode: z.record(z.string(), z.string()).optional(),
+        })
+        .optional(),
+
     entryFunctionName: z
         .string()
         .optional(),

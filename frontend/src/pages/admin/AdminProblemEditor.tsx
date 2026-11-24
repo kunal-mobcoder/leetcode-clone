@@ -10,6 +10,9 @@ import {
     Code2,
     Sparkles,
     Loader2,
+    BookOpen,
+    Cpu,
+    Layers,
 } from 'lucide-react';
 
 export const AdminProblemEditor: React.FC = () => {
@@ -44,6 +47,17 @@ export const AdminProblemEditor: React.FC = () => {
         python: `class Solution:\n    def solution(self, input):\n        pass`,
     });
 
+    // Editorial state
+    const [editorialIntuition, setEditorialIntuition] = useState('');
+    const [editorialApproach, setEditorialApproach] = useState('');
+    const [editorialTimeComplexity, setEditorialTimeComplexity] = useState('');
+    const [editorialSpaceComplexity, setEditorialSpaceComplexity] = useState('');
+    const [editorialActiveLang, setEditorialActiveLang] = useState<'javascript' | 'python'>('javascript');
+    const [editorialCode, setEditorialCode] = useState<Record<string, string>>({
+        javascript: '',
+        python: '',
+    });
+
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     // Prepopulate form if in edit mode
@@ -68,6 +82,19 @@ export const AdminProblemEditor: React.FC = () => {
                     javascript: problem.starterCode.javascript || starterCode.javascript,
                     python: problem.starterCode.python || starterCode.python,
                 });
+            }
+
+            if (problem.editorial) {
+                setEditorialIntuition(problem.editorial.intuition || '');
+                setEditorialApproach(problem.editorial.approach || '');
+                setEditorialTimeComplexity(problem.editorial.timeComplexity || '');
+                setEditorialSpaceComplexity(problem.editorial.spaceComplexity || '');
+                if (problem.editorial.solutionCode) {
+                    setEditorialCode({
+                        javascript: problem.editorial.solutionCode.javascript || '',
+                        python: problem.editorial.solutionCode.python || '',
+                    });
+                }
             }
         }
     }, [problem]);
@@ -144,6 +171,14 @@ export const AdminProblemEditor: React.FC = () => {
             }))
             .filter((ex) => ex.input && ex.output);
 
+        const hasEditorial =
+            editorialIntuition.trim() ||
+            editorialApproach.trim() ||
+            editorialTimeComplexity.trim() ||
+            editorialSpaceComplexity.trim() ||
+            editorialCode.javascript?.trim() ||
+            editorialCode.python?.trim();
+
         const payload = {
             title: title.trim(),
             slug: slug.trim(),
@@ -155,6 +190,18 @@ export const AdminProblemEditor: React.FC = () => {
             hints: cleanHints,
             examples: cleanExamples,
             starterCode,
+            editorial: hasEditorial
+                ? {
+                      intuition: editorialIntuition.trim() || undefined,
+                      approach: editorialApproach.trim() || undefined,
+                      timeComplexity: editorialTimeComplexity.trim() || undefined,
+                      spaceComplexity: editorialSpaceComplexity.trim() || undefined,
+                      solutionCode: {
+                          javascript: editorialCode.javascript || '',
+                          python: editorialCode.python || '',
+                      },
+                  }
+                : undefined,
         };
 
         try {
@@ -579,6 +626,128 @@ export const AdminProblemEditor: React.FC = () => {
                                 fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
                             }}
                         />
+                    </div>
+                </div>
+
+                {/* 6. Editorial & Reference Solutions */}
+                <div className="bg-chai-card border border-chai-border rounded-2xl p-6 space-y-5">
+                    <div className="flex items-center justify-between border-b border-chai-border pb-3">
+                        <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-chai-accent" />
+                            <div>
+                                <h2 className="text-sm font-bold text-chai-text tracking-tight">
+                                    Official Editorial & Reference Solutions
+                                </h2>
+                                <p className="text-[11px] text-chai-muted">
+                                    Explain the optimal algorithm, time/space complexity, and provide reference code.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Intuition */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-chai-muted uppercase tracking-wider">
+                            Intuition
+                        </label>
+                        <textarea
+                            value={editorialIntuition}
+                            onChange={(e) => setEditorialIntuition(e.target.value)}
+                            rows={3}
+                            placeholder="What is the high-level intuition or key insight for this problem?"
+                            className="w-full bg-chai-bg border border-chai-border rounded-xl p-3 text-chai-text font-sans text-xs focus:outline-none focus:border-chai-accent leading-relaxed"
+                        />
+                    </div>
+
+                    {/* Approach */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-chai-muted uppercase tracking-wider">
+                            Approach
+                        </label>
+                        <textarea
+                            value={editorialApproach}
+                            onChange={(e) => setEditorialApproach(e.target.value)}
+                            rows={4}
+                            placeholder="Step-by-step description of the algorithm and data structures used..."
+                            className="w-full bg-chai-bg border border-chai-border rounded-xl p-3 text-chai-text font-sans text-xs focus:outline-none focus:border-chai-accent leading-relaxed"
+                        />
+                    </div>
+
+                    {/* Complexity Inputs */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-chai-muted uppercase tracking-wider flex items-center gap-1.5">
+                                <Cpu className="w-3.5 h-3.5 text-chai-accent" />
+                                <span>Time Complexity</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={editorialTimeComplexity}
+                                onChange={(e) => setEditorialTimeComplexity(e.target.value)}
+                                placeholder="e.g. O(n) or O(log n)"
+                                className="w-full bg-chai-bg border border-chai-border rounded-xl px-3 py-2 text-chai-text font-mono text-xs focus:outline-none focus:border-chai-accent"
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-chai-muted uppercase tracking-wider flex items-center gap-1.5">
+                                <Layers className="w-3.5 h-3.5 text-chai-accent" />
+                                <span>Space Complexity</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={editorialSpaceComplexity}
+                                onChange={(e) => setEditorialSpaceComplexity(e.target.value)}
+                                placeholder="e.g. O(1) or O(n)"
+                                className="w-full bg-chai-bg border border-chai-border rounded-xl px-3 py-2 text-chai-text font-mono text-xs focus:outline-none focus:border-chai-accent"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Reference Solution Code */}
+                    <div className="space-y-2 pt-2 border-t border-chai-border/50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Code2 className="w-3.5 h-3.5 text-chai-accent" />
+                                <span className="text-xs font-semibold text-chai-text">Reference Solution Code</span>
+                            </div>
+
+                            <div className="flex gap-2">
+                                {(['javascript', 'python'] as const).map((lang) => (
+                                    <button
+                                        type="button"
+                                        key={lang}
+                                        onClick={() => setEditorialActiveLang(lang)}
+                                        className={`px-3 py-1 rounded-lg text-xs capitalize font-mono transition ${
+                                            editorialActiveLang === lang
+                                                ? 'bg-chai-accent text-black font-semibold'
+                                                : 'bg-chai-bg border border-chai-border text-chai-muted hover:text-chai-text'
+                                        }`}
+                                    >
+                                        {lang}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="border border-chai-border rounded-xl overflow-hidden bg-[#1e1e1e] h-64">
+                            <Editor
+                                height="100%"
+                                theme="vs-dark"
+                                language={editorialActiveLang === 'python' ? 'python' : 'javascript'}
+                                value={editorialCode[editorialActiveLang] || ''}
+                                onChange={(val) =>
+                                    setEditorialCode({ ...editorialCode, [editorialActiveLang]: val || '' })
+                                }
+                                options={{
+                                    fontSize: 13,
+                                    minimap: { enabled: false },
+                                    scrollBeyondLastLine: false,
+                                    tabSize: 2,
+                                    fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
 

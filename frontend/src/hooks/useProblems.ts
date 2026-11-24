@@ -7,6 +7,17 @@ export interface ProblemExample {
     explanation?: string;
 }
 
+export interface ProblemEditorial {
+    intuition?: string;
+    approach?: string;
+    timeComplexity?: string;
+    spaceComplexity?: string;
+    solutionCode?: {
+        javascript?: string;
+        python?: string;
+    };
+}
+
 export interface Problem {
     _id: string;
     title: string;
@@ -16,6 +27,7 @@ export interface Problem {
     constraints?: string[];
     examples?: ProblemExample[];
     hints?: string[];
+    editorial?: ProblemEditorial;
     description: string;
     starterCode?: Record<string, string>;
     defaultCode?: Record<string, string>;

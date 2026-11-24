@@ -14,6 +14,18 @@ export interface ProblemExample {
 }
 
 
+export interface ProblemEditorial {
+    intuition?: string;
+    approach?: string;
+    timeComplexity?: string;
+    spaceComplexity?: string;
+    solutionCode?: {
+        javascript?: string;
+        python?: string;
+    };
+}
+
+
 export interface Problem {
     title: string;
     slug: string;
@@ -23,6 +35,7 @@ export interface Problem {
     examples: ProblemExample[];
     tags: string[];
     hints?: string[];
+    editorial?: ProblemEditorial;
     starterCode?: {
         javascript?: string;
         python?: string;
@@ -106,6 +119,18 @@ const ProblemSchema = new mongoose.Schema<Problem>(
         hints: {
             type: [String],
             default: [],
+        },
+
+        editorial: {
+            intuition: { type: String, default: "" },
+            approach: { type: String, default: "" },
+            timeComplexity: { type: String, default: "" },
+            spaceComplexity: { type: String, default: "" },
+            solutionCode: {
+                type: Map,
+                of: String,
+                default: {},
+            },
         },
 
         starterCode: {

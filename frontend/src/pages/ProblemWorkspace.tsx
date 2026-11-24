@@ -32,6 +32,9 @@ import {
     Lightbulb,
     ChevronDown,
     ChevronUp,
+    BookOpen,
+    Cpu,
+    Layers,
 } from 'lucide-react';
 
 export const ProblemWorkspace: React.FC = () => {
@@ -47,7 +50,9 @@ export const ProblemWorkspace: React.FC = () => {
     const [language, setLanguage] = useState<'javascript' | 'python'>('javascript');
     const [code, setCode] = useState('');
     const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
-    const [activeLeftTab, setActiveLeftTab] = useState<'description' | 'submissions'>('description');
+    const [activeLeftTab, setActiveLeftTab] = useState<'description' | 'editorial' | 'submissions'>('description');
+    const [editorialLang, setEditorialLang] = useState<'javascript' | 'python'>('javascript');
+    const [copiedEditorial, setCopiedEditorial] = useState(false);
     const [activeConsoleTab, setActiveConsoleTab] = useState<'testcase' | 'testresult' | 'submitresult'>('testcase');
     const [customInput, setCustomInput] = useState('');
     const [runResult, setRunResult] = useState<RunCodeResponse | null>(null);
@@ -345,6 +350,17 @@ export const ProblemWorkspace: React.FC = () => {
                                 <span>Description</span>
                             </button>
                             <button
+                                onClick={() => setActiveLeftTab('editorial')}
+                                className={`flex items-center gap-1.5 transition ${
+                                    activeLeftTab === 'editorial'
+                                        ? 'text-chai-accent font-semibold'
+                                        : 'text-chai-muted hover:text-chai-text'
+                                }`}
+                            >
+                                <BookOpen className="w-3.5 h-3.5" />
+                                <span>Editorial</span>
+                            </button>
+                            <button
                                 onClick={() => setActiveLeftTab('submissions')}
                                 className={`flex items-center gap-1.5 transition ${
                                     activeLeftTab === 'submissions'
@@ -494,6 +510,161 @@ export const ProblemWorkspace: React.FC = () => {
                                                 );
                                             })}
                                         </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : activeLeftTab === 'editorial' ? (
+                            /* Editorial & Approaches Tab */
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-base font-bold text-chai-text">Official Editorial & Solution</h2>
+                                    <p className="text-chai-muted text-[11px] mt-0.5">
+                                        Detailed algorithmic breakdown, complexity analysis, and verified reference implementations.
+                                    </p>
+                                </div>
+
+                                {!problemData.editorial || (!problemData.editorial.approach && !problemData.editorial.solutionCode) ? (
+                                    <div className="border border-dashed border-chai-border rounded-xl p-8 text-center space-y-2">
+                                        <BookOpen className="w-8 h-8 text-chai-muted mx-auto opacity-50" />
+                                        <div className="text-chai-text font-medium text-xs">No Official Editorial Published</div>
+                                        <div className="text-chai-muted text-[11px] max-w-sm mx-auto">
+                                            The editorial and reference solutions for this problem have not been published yet.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-5">
+                                        {/* Intuition Section */}
+                                        {problemData.editorial.intuition && (
+                                            <div className="space-y-2">
+                                                <h3 className="font-bold text-chai-text uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                                    <Lightbulb className="w-3.5 h-3.5 text-chai-accent" />
+                                                    <span>Intuition</span>
+                                                </h3>
+                                                <div className="text-xs text-chai-text/90 leading-relaxed bg-chai-card/50 border border-chai-border rounded-lg p-3.5">
+                                                    {problemData.editorial.intuition}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Approach Section */}
+                                        {problemData.editorial.approach && (
+                                            <div className="space-y-2">
+                                                <h3 className="font-bold text-chai-text uppercase tracking-wider text-[11px]">
+                                                    Approach
+                                                </h3>
+                                                <div className="text-xs text-chai-text/90 leading-relaxed whitespace-pre-line bg-chai-card/30 border border-chai-border/60 rounded-lg p-3.5">
+                                                    {problemData.editorial.approach}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Complexity Analysis Cards */}
+                                        {(problemData.editorial.timeComplexity || problemData.editorial.spaceComplexity) && (
+                                            <div className="space-y-2">
+                                                <h3 className="font-bold text-chai-text uppercase tracking-wider text-[11px]">
+                                                    Complexity Analysis
+                                                </h3>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {problemData.editorial.timeComplexity && (
+                                                        <div className="bg-chai-card border border-chai-border rounded-lg p-3 flex items-start gap-2.5">
+                                                            <Cpu className="w-4 h-4 text-chai-accent shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="text-[10px] text-chai-muted uppercase tracking-wider font-semibold">Time Complexity</div>
+                                                                <div className="font-mono text-xs font-bold text-chai-accent mt-0.5">
+                                                                    {problemData.editorial.timeComplexity}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {problemData.editorial.spaceComplexity && (
+                                                        <div className="bg-chai-card border border-chai-border rounded-lg p-3 flex items-start gap-2.5">
+                                                            <Layers className="w-4 h-4 text-chai-accent shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="text-[10px] text-chai-muted uppercase tracking-wider font-semibold">Space Complexity</div>
+                                                                <div className="font-mono text-xs font-bold text-chai-accent mt-0.5">
+                                                                    {problemData.editorial.spaceComplexity}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Reference Solution Code */}
+                                        {problemData.editorial.solutionCode && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-bold text-chai-text uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                                        <Code2 className="w-3.5 h-3.5 text-chai-accent" />
+                                                        <span>Reference Solution</span>
+                                                    </h3>
+
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex bg-chai-card border border-chai-border rounded-md p-0.5 text-[11px]">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditorialLang('javascript')}
+                                                                className={`px-2 py-0.5 rounded transition ${
+                                                                    editorialLang === 'javascript'
+                                                                        ? 'bg-chai-accent text-black font-semibold'
+                                                                        : 'text-chai-muted hover:text-chai-text'
+                                                                }`}
+                                                            >
+                                                                JavaScript
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditorialLang('python')}
+                                                                className={`px-2 py-0.5 rounded transition ${
+                                                                    editorialLang === 'python'
+                                                                        ? 'bg-chai-accent text-black font-semibold'
+                                                                        : 'text-chai-muted hover:text-chai-text'
+                                                                }`}
+                                                            >
+                                                                Python
+                                                            </button>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const codeToCopy =
+                                                                    problemData.editorial?.solutionCode?.[editorialLang] || '';
+                                                                if (codeToCopy) {
+                                                                    navigator.clipboard.writeText(codeToCopy);
+                                                                    setCopiedEditorial(true);
+                                                                    setTimeout(() => setCopiedEditorial(false), 2000);
+                                                                }
+                                                            }}
+                                                            className="rounded bg-chai-card hover:bg-chai-card-hover border border-chai-border text-chai-muted hover:text-chai-text transition flex items-center gap-1 px-2.5 py-1 text-[11px]"
+                                                            title="Copy reference solution"
+                                                        >
+                                                            {copiedEditorial ? (
+                                                                <>
+                                                                    <Check className="w-3 h-3 text-green-400" />
+                                                                    <span className="text-green-400 font-medium">Copied</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy className="w-3 h-3" />
+                                                                    <span>Copy</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <pre className="p-4 rounded-lg bg-chai-card border border-chai-border font-mono text-[11px] overflow-x-auto text-chai-text leading-relaxed whitespace-pre">
+                                                        <code>
+                                                            {problemData.editorial.solutionCode[editorialLang] ||
+                                                                '// No solution code available for this language'}
+                                                        </code>
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
