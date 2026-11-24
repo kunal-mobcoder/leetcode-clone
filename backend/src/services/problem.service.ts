@@ -144,3 +144,56 @@ export async function archiveProblemService(problemId: string) {
 
     return problemRepository.updateProblemStatus(problemId, "archived");
 }
+
+export async function getAllProblemsAdminService(query: ProblemQueryInput & { status?: "draft" | "published" | "archived" }) {
+    const result = await problemRepository.findProblems({
+        page: query.page,
+        limit: query.limit,
+        difficulty: query.difficulty,
+        tag: query.tag,
+        search: query.search,
+        sort: query.sort,
+        order: query.order,
+        status: query.status,
+    });
+
+    const totalPages = Math.ceil(result.total / query.limit);
+
+    return {
+        problems: result.problems,
+        pagination: {
+            page: query.page,
+            limit: query.limit,
+            total: result.total,
+            totalPages,
+            hasNextPage: query.page < totalPages,
+            hasPreviousPage: query.page > 1,
+        },
+    };
+}
+
+export async function getProblemByIdAdminService(problemId: string) {
+    if (!mongoose.isValidObjectId(problemId)) {
+        throw new AppError("Invalid problem ID", 400);
+    }
+
+    const problem = await problemRepository.findProblemById(problemId);
+    if (!problem) {
+        throw new AppError("Problem not found", 404);
+    }
+
+    return problem;
+}
+
+export async function setProblemStatusService(problemId: string, status: "draft" | "published" | "archived") {
+    if (!mongoose.isValidObjectId(problemId)) {
+        throw new AppError("Invalid problem ID", 400);
+    }
+
+    const problem = await problemRepository.findProblemById(problemId);
+    if (!problem) {
+        throw new AppError("Problem not found", 404);
+    }
+
+    return problemRepository.updateProblemStatus(problemId, status);
+}

@@ -1,6 +1,16 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { createProblemService, getProblemsService, getProblemBySlugService, updateProblemService, publishProblemService, archiveProblemService, } from "../services/problem.service.js";
+import {
+    createProblemService,
+    getProblemsService,
+    getProblemBySlugService,
+    updateProblemService,
+    publishProblemService,
+    archiveProblemService,
+    getAllProblemsAdminService,
+    getProblemByIdAdminService,
+    setProblemStatusService,
+} from "../services/problem.service.js";
 
 import type { CreateProblemInput, } from "../schemas/problem/createProblem.schema.js";
 
@@ -91,6 +101,48 @@ export async function archiveProblemController(req: Request<{ id: string }>, res
             message: "Problem archived successfully",
         });
 
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getAllProblemsAdminController(req: Request, res: Response, next: NextFunction) {
+    try {
+        const query = (req.validatedQuery || req.query) as any;
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 50;
+        const result = await getAllProblemsAdminService({
+            ...query,
+            page,
+            limit,
+        });
+
+        return res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getProblemByIdAdminController(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+        const problem = await getProblemByIdAdminService(req.params.id);
+
+        return res.status(200).json({
+            problem,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function setProblemStatusController(req: Request<{ id: string }, {}, { status: "draft" | "published" | "archived" }>, res: Response, next: NextFunction) {
+    try {
+        const problem = await setProblemStatusService(req.params.id, req.body.status);
+
+        return res.status(200).json({
+            message: `Problem status updated to ${req.body.status}`,
+            problem,
+        });
     } catch (error) {
         next(error);
     }

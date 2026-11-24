@@ -58,6 +58,13 @@ export const updateProblemSchema = z.object({
         .optional(),
 
 
+    hints: z
+        .array(
+            z.string().min(1)
+        )
+        .optional(),
+
+
     constraints: z
         .array(
             z.string().min(1)

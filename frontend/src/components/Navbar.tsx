@@ -24,6 +24,14 @@ export const Navbar: React.FC = () => {
                                 Profile
                             </Link>
                         )}
+                        {user?.roles?.includes('admin') && (
+                            <Link
+                                to="/admin/problems"
+                                className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
+                            >
+                                <span>Admin</span>
+                            </Link>
+                        )}
                     </nav>
                 </div>
 

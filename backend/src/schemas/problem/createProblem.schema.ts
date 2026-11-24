@@ -29,6 +29,11 @@ export const createProblemSchema = z.object({
         .array(z.string().min(1))
         .default([]),
 
+    hints: z
+        .array(z.string().min(1))
+        .optional()
+        .default([]),
+
     constraints: z
         .array(z.string().min(1))
         .default([]),
