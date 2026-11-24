@@ -91,6 +91,18 @@ export async function judgeSubmission(submissionId: string) {
             );
         }
 
+        // Memory limit exceeded (OOM kill from Docker cgroup)
+        if (result.type === "memory_limit_exceeded") {
+            console.timeEnd(`[JUDGE_TOTAL] ${submissionId}`);
+            return await submissionRepository.updateSubmissionResult(
+                submissionId,
+                {
+                    status: "memory_limit_exceeded",
+                    runtime: Math.round(totalRuntime),
+                }
+            );
+        }
+
         // Compilation error
         if (result.type === "compile_error") {
             console.timeEnd(`[JUDGE_TOTAL] ${submissionId}`);

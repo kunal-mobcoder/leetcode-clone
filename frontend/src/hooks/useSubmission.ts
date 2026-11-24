@@ -18,7 +18,7 @@ export interface RunCodeResultItem {
     input: string;
     expectedOutput?: string;
     actualOutput: string;
-    type: 'success' | 'timeout' | 'runtime_error' | 'compile_error' | 'system_error';
+    type: 'success' | 'timeout' | 'runtime_error' | 'compile_error' | 'memory_limit_exceeded' | 'system_error';
     runtime: number;
     passed?: boolean;
 }
@@ -33,7 +33,7 @@ export interface SubmissionItem {
     id?: string;
     problemId: string;
     language: string;
-    status: 'pending' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit_exceeded' | 'system_error';
+    status: 'pending' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit_exceeded' | 'memory_limit_exceeded' | 'system_error';
     runtime: number;
     memory: number;
     code: string;

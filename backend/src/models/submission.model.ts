@@ -22,6 +22,7 @@ export type SubmissionLanguage =
  * │ accepted                      │
  * │ wrong_answer                  │
  * │ time_limit_exceeded           │
+ * │ memory_limit_exceeded         │
  * │ runtime_error                 │
  * │ compile_error                 │
  * │ system_error                  │
@@ -33,6 +34,7 @@ export type SubmissionStatus =
     | "accepted"
     | "wrong_answer"
     | "time_limit_exceeded"
+    | "memory_limit_exceeded"
     | "runtime_error"
     | "compile_error"
     | "system_error";
@@ -174,6 +176,7 @@ const SubmissionSchema =
                         "accepted",
                         "wrong_answer",
                         "time_limit_exceeded",
+                        "memory_limit_exceeded",
                         "runtime_error",
                         "compile_error",
                         "system_error",

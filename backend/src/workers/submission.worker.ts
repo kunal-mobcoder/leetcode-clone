@@ -16,6 +16,7 @@ import connectToDB from "../config/dbConnect.js";
 import { bullmqConnection } from "../config/bullmq.js";
 import { SUBMISSION_QUEUE_NAME } from "../queues/submission.queue.js";
 import { judgeSubmission } from "../services/judge.service.js";
+import { sweepOrphanedContainers } from "../services/codeExecutor.service.js";
 import * as submissionRepository from "../repositories/submission.repository.js";
 
 
@@ -130,6 +131,25 @@ async function startWorker() {
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
+
+    // ---------------------------------------------------------------------------
+    // Periodic orphan container sweep (every 60 s)
+    // ---------------------------------------------------------------------------
+
+    const SWEEP_INTERVAL_MS = 60_000;
+    const sweepTimer = setInterval(async () => {
+        try {
+            const removed = await sweepOrphanedContainers(120);
+            if (removed > 0) {
+                console.log(`[worker] Orphan sweep removed ${removed} stale judge container(s)`);
+            }
+        } catch (err) {
+            console.error("[worker] Orphan sweep error:", err);
+        }
+    }, SWEEP_INTERVAL_MS);
+
+    // Don't let the timer prevent Node from exiting
+    sweepTimer.unref();
 
     console.log(
         `[worker] Submission worker started (concurrency=3, queue="${SUBMISSION_QUEUE_NAME}")`
